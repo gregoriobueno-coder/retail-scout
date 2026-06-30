@@ -1,0 +1,16 @@
+{
+  "name": "retail-scout",
+  "version": "1.0.0",
+  "description": "Retail Cruise pricing crawler and alert engine for Wandering Bear",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "sqlite3": "^5.1.6",
+    "dotenv": "^16.3.1",
+    "graphql-request": "^6.1.0",
+    "graphql": "^16.8.1"
+  }
+}
