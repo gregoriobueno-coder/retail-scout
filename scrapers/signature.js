@@ -51,11 +51,67 @@ async function scrapeSignature() {
     // Navigate to Group Space Cruise Inventory
     await page.goto('https://agent.signaturetravelnetwork.com/cruises/group-cruise-space', {
       waitUntil: 'networkidle',
-      timeout: 10000
+      timeout: 15000
     });
 
+    // Wait for data table to render
+    await page.waitForSelector('table', { timeout: 15000 });
+
+    const deals = await page.evaluate(() => {
+      const rows = Array.from(document.querySelectorAll('table tr'));
+      const results = [];
+      
+      for (const row of rows) {
+        const cells = Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim());
+        if (cells.length < 5) continue; // Skip headers / small rows
+        
+        // Find cells matching Date format (e.g. MM/DD/YYYY or YYYY-MM-DD)
+        const dateIdx = cells.findIndex(c => /\d{1,2}\/\d{1,2}\/\d{4}/.test(c) || /\d{4}-\d{2}-\d{2}/.test(c));
+        // Find cells matching Price format (e.g. $899 or $1,200)
+        const priceIdx = cells.findIndex(c => /\$\d+/.test(c));
+        
+        if (dateIdx !== -1 && priceIdx !== -1) {
+          results.push({
+            brand: cells[0] || 'Unknown Brand',
+            ship: cells[1] || 'Unknown Ship',
+            sail_date: cells[dateIdx],
+            nights: cells[dateIdx - 1] || '7',
+            itinerary: cells[dateIdx + 1] || 'Signature Group Space Deal',
+            category: cells[priceIdx - 1] || 'Balcony',
+            priceStr: cells[priceIdx]
+          });
+        }
+      }
+      return results;
+    });
+
+    console.log(`[Signature Scraper] Successfully extracted ${deals.length} group space rows from DOM.`);
+
     const normalized = [];
-    // Parsing code for Signature HTML tables would go here
+    for (const d of deals) {
+      const price = parseInt(d.priceStr.replace(/[^0-9]/g, '')) || 0;
+      if (price > 0) {
+        let cleanDate = d.sail_date;
+        try {
+          cleanDate = new Date(d.sail_date).toISOString().split('T')[0];
+        } catch (e) {}
+
+        normalized.push({
+          sailing_id: `signature_${d.brand.toLowerCase().replace(/[^a-z]/g, '')}_${d.ship.toLowerCase().replace(/[^a-z]/g, '')}_${cleanDate.replace(/[^0-9]/g, '')}`,
+          brand: d.brand,
+          ship: d.ship,
+          sail_date: cleanDate,
+          nights: parseInt(d.nights) || 7,
+          itinerary: d.itinerary,
+          region: 'Global / Block Space',
+          category: d.category,
+          rate_type: 'signature_group',
+          base_rate: price,
+          taxes_fees: 0
+        });
+      }
+    }
+
     await browser.close();
     return normalized;
 
