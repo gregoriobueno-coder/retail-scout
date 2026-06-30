@@ -1,6 +1,14 @@
 const { initDatabase, db } = require('./database');
 const { scrapeVirginVoyages } = require('./scrapers/virgin');
 const { scrapeDisneyCruiseLine } = require('./scrapers/disney');
+const { scrapeRoyalCaribbean } = require('./scrapers/royal');
+const { scrapeCarnival } = require('./scrapers/carnival');
+const { scrapeOneSourcePublic } = require('./scrapers/onesource');
+const { scrapeSignature } = require('./scrapers/signature');
+const { compileRetailDashboard } = require('./dashboard-compiler');
+const { execSync } = require('child_process');
+const path = require('path');
+require('dotenv').config();
 
 async function saveDealsToDatabase(deals) {
   return new Promise((resolve, reject) => {
@@ -8,7 +16,6 @@ async function saveDealsToDatabase(deals) {
       let sailingsInserted = 0;
       let pricesLogged = 0;
 
-      // 1. Prepare SQL Statements
       const insertSailing = db.prepare(`
         INSERT OR REPLACE INTO sailings (sailing_id, brand, ship, sail_date, nights, itinerary, region)
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -19,7 +26,6 @@ async function saveDealsToDatabase(deals) {
         VALUES (?, ?, ?, ?, ?)
       `);
 
-      // 2. Loop and run queries
       for (const d of deals) {
         insertSailing.run(
           d.sailing_id,
@@ -48,7 +54,6 @@ async function saveDealsToDatabase(deals) {
         pricesLogged++;
       }
 
-      // 3. Finalize
       insertSailing.finalize();
       logPrice.finalize((err) => {
         if (err) reject(err);
@@ -56,6 +61,19 @@ async function saveDealsToDatabase(deals) {
       });
     });
   });
+}
+
+function pushToGit() {
+  try {
+    console.log('[Git Sync] Staging, committing, and pushing static updates to GitHub...');
+    execSync('git add index.html', { cwd: __dirname });
+    // Use ignore on commit to prevent errors when there are no changes
+    execSync('git commit -m "Automated Sync: Update retail pricing dashboard"', { cwd: __dirname, stdio: 'ignore' });
+    execSync('git push origin main', { cwd: __dirname });
+    console.log('[Git Sync] Codebase pushed successfully.');
+  } catch (err) {
+    console.warn('[Git Sync] Pushing failed or no changes to commit:', err.message);
+  }
 }
 
 async function runOrchestrator() {
@@ -68,7 +86,7 @@ async function runOrchestrator() {
 
   const allDeals = [];
 
-  // Run Virgin voyages Scraper
+  // 1. Run Virgin Voyages Scraper
   try {
     const virginDeals = await scrapeVirginVoyages();
     allDeals.push(...virginDeals);
@@ -76,12 +94,44 @@ async function runOrchestrator() {
     console.error('Error running Virgin Voyages Scraper:', e.message);
   }
 
-  // Run Disney Cruise Line Scraper
+  // 2. Run Disney Cruise Line Scraper
   try {
     const disneyDeals = await scrapeDisneyCruiseLine();
     allDeals.push(...disneyDeals);
   } catch (e) {
     console.error('Error running Disney Cruise Line Scraper:', e.message);
+  }
+
+  // 3. Run Royal Caribbean & Celebrity Scraper
+  try {
+    const royalDeals = await scrapeRoyalCaribbean();
+    allDeals.push(...royalDeals);
+  } catch (e) {
+    console.error('Error running Royal Caribbean Scraper:', e.message);
+  }
+
+  // 4. Run Carnival Scraper
+  try {
+    const carnivalDeals = await scrapeCarnival();
+    allDeals.push(...carnivalDeals);
+  } catch (e) {
+    console.error('Error running Carnival Scraper:', e.message);
+  }
+
+  // 5. Run OneSource Public Scraper
+  try {
+    const onesourceDeals = await scrapeOneSourcePublic();
+    allDeals.push(...onesourceDeals);
+  } catch (e) {
+    console.error('Error running OneSource Public Scraper:', e.message);
+  }
+
+  // 6. Run Signature Travel Network Scraper
+  try {
+    const signatureDeals = await scrapeSignature();
+    allDeals.push(...signatureDeals);
+  } catch (e) {
+    console.error('Error running Signature Scraper:', e.message);
   }
 
   console.log(`\n[Orchestrator] Processing total of ${allDeals.length} pricing points...`);
@@ -93,6 +143,20 @@ async function runOrchestrator() {
       console.log(`✅ Success: Ingested ${sailingsInserted} sailings.`);
       console.log(`✅ Success: Logged ${pricesLogged} historical price updates.`);
       console.log('--------------------------------------------------');
+      
+      // Compile static dashboard index.html
+      compileRetailDashboard();
+
+      // Close DB before Git Sync
+      db.close((err) => {
+        if (err) console.error('Error closing database:', err.message);
+        else console.log('Database connection closed.');
+
+        // Push updates to GitHub
+        pushToGit();
+        console.log('==================================================');
+      });
+      return; // DB closure handler takes care of exit logging
     } catch (dbErr) {
       console.error('Failed to save scraped data to SQLite database:', dbErr.message);
     }
@@ -100,7 +164,6 @@ async function runOrchestrator() {
     console.log('⚠️ No cruise deals extracted to save.');
   }
 
-  // Close Database Connection safely
   db.close((err) => {
     if (err) console.error('Error closing database:', err.message);
     else console.log('Database connection closed.');
