@@ -184,51 +184,85 @@ async function scrapeSignature() {
       // Parse the table cells dynamically
       const pageDeals = await page.evaluate(() => {
         const rows = Array.from(document.querySelectorAll('table tr'));
+        
+        // 1. Find header row to map indexes dynamically
+        const headerRow = rows.find(r => r.innerText.includes('Date') && r.innerText.includes('Nights') && r.innerText.includes('Price'));
+        if (!headerRow) return [];
+
+        const headers = Array.from(headerRow.querySelectorAll('th, td')).map(h => h.innerText.trim());
+        const dateIdx = headers.findIndex(h => h.includes('Date'));
+        const shipIdx = headers.findIndex(h => h.includes('Ship') || h.includes('Cruise Line'));
+        const nightsIdx = headers.findIndex(h => h.includes('Nights'));
+        const priceIdx = headers.findIndex(h => h.includes('Price'));
+        const itineraryIdx = headers.findIndex(h => h.includes('Title') || h.includes('Theme'));
+
         const results = [];
         
         for (const row of rows) {
           const cells = Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim());
-          if (cells.length < 5) continue; // Skip headers/empty rows
+          if (cells.length < Math.max(dateIdx, shipIdx, nightsIdx, priceIdx)) continue;
           
-          // Match Date format (e.g. 10/12/2026 or 2026-10-12)
-          const dateIdx = cells.findIndex(c => /\d{1,2}\/\d{1,2}\/\d{4}/.test(c) || /\d{4}-\d{2}-\d{2}/.test(c));
-          // Match Price format (e.g. $899 or $1,200)
-          const priceIdx = cells.findIndex(c => /\$\d+/.test(c));
+          const dateText = cells[dateIdx] || '';
+          // Match MM/DD/YY or MM/DD/YYYY
+          if (!/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(dateText)) continue;
           
-          if (dateIdx !== -1 && priceIdx !== -1) {
-            results.push({
-              brand: cells[0] || 'Unknown Brand',
-              ship: cells[1] || 'Unknown Ship',
-              sail_date: cells[dateIdx],
-              nights: cells[dateIdx - 1] || '7',
-              itinerary: cells[dateIdx + 1] || 'Signature Group Cruise Space',
-              category: cells[priceIdx - 1] || 'Balcony',
-              priceStr: cells[priceIdx]
-            });
-          }
+          results.push({
+            date: dateText,
+            shipText: cells[shipIdx] || '',
+            nights: cells[nightsIdx] || '7',
+            itinerary: cells[itineraryIdx] || 'Signature Group Deal',
+            priceStr: cells[priceIdx] || ''
+          });
         }
         return results;
       });
 
-      console.log(`[Signature Scraper] Extracted ${pageDeals.length} deals on page ${currentPage}.`);
+      console.log(`[Signature Scraper] Extracted ${pageDeals.length} raw rows on page ${currentPage}.`);
       
       for (const d of pageDeals) {
         const price = parseInt(d.priceStr.replace(/[^0-9]/g, '')) || 0;
         if (price > 0) {
-          let cleanDate = d.sail_date;
+          let cleanDate = d.date;
           try {
-            cleanDate = new Date(d.sail_date).toISOString().split('T')[0];
+            cleanDate = new Date(d.date).toISOString().split('T')[0];
           } catch (e) {}
 
+          let brand = 'Signature Promo';
+          let ship = d.shipText;
+
+          const knownBrands = [
+            'AmaWaterways', 'Avalon Waterways', 'Celebrity Cruises', 'Celebrity', 
+            'Royal Caribbean', 'Disney Cruise Line', 'Disney', 'Carnival Cruise Line', 
+            'Carnival', 'Princess Cruises', 'Princess', 'Holland America Line', 'Holland America', 
+            'Cunard Line', 'Cunard', 'Seabourn', 'Silversea', 'Ponant Explorations', 'Ponant',
+            'Viking Cruises', 'Viking'
+          ];
+
+          for (const kb of knownBrands) {
+            if (d.shipText.toLowerCase().includes(kb.toLowerCase())) {
+              brand = kb;
+              ship = d.shipText.replace(new RegExp(kb, 'i'), '').trim().replace(/^\s+|\s+$/g, '');
+              break;
+            }
+          }
+
+          if (brand === 'Celebrity') brand = 'Celebrity Cruises';
+          if (brand === 'Carnival') brand = 'Carnival Cruise Line';
+          if (brand === 'Princess') brand = 'Princess Cruises';
+          if (brand === 'Cunard') brand = 'Cunard Line';
+          if (brand === 'Ponant Explorations') brand = 'Ponant';
+
+          const itinerary = d.itinerary.split('\n')[0].trim();
+
           normalizedDeals.push({
-            sailing_id: `signature_${d.brand.toLowerCase().replace(/[^a-z]/g, '')}_${d.ship.toLowerCase().replace(/[^a-z]/g, '')}_${cleanDate.replace(/[^0-9]/g, '')}`,
-            brand: d.brand,
-            ship: d.ship,
+            sailing_id: `signature_${brand.toLowerCase().replace(/[^a-z]/g, '')}_${ship.toLowerCase().replace(/[^a-z]/g, '')}_${cleanDate.replace(/[^0-9]/g, '')}`,
+            brand: brand,
+            ship: ship,
             sail_date: cleanDate,
             nights: parseInt(d.nights) || 7,
-            itinerary: d.itinerary,
+            itinerary: itinerary,
             region: 'Global / Block Space',
-            category: d.category,
+            category: 'Group Block Stateroom',
             rate_type: 'signature_group',
             base_rate: price,
             taxes_fees: 0

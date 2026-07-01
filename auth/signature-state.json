@@ -2,27 +2,27 @@
   "cookies": [
     {
       "name": "CFID",
-      "value": "467125731",
+      "value": "541513845",
       "domain": "www.signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1817436168.225665,
+      "expires": 1817437150.116112,
       "httpOnly": true,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "CFTOKEN",
-      "value": "93314906",
+      "value": "67762023",
       "domain": "www.signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1817436168.227073,
+      "expires": 1817437150.116495,
       "httpOnly": true,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "nlbi_878969",
-      "value": "MZK+EzBSpzE6iQXVAujvJQAAAABmlb40wixE+a0vRb7ccUCP",
+      "value": "tNrlHfRowEYADs5QAujvJQAAAACpBM/oY3Qcej/N9ZpiwCWD",
       "domain": ".signaturetravelnetwork.com",
       "path": "/",
       "expires": -1,
@@ -32,24 +32,116 @@
     },
     {
       "name": "visid_incap_878969",
-      "value": "Pdlw2eYBSCe5E8ht3W6nwweIRGoAAAAAQUIPAAAAAACMZuJJyks6X0g3Fq6O1Z2r",
+      "value": "LalOLY+ARW2AyFUOxW2ejN2LRGoAAAAAQUIPAAAAAADffbj9UQDOghlm+jSy/VVR",
       "domain": ".signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1814341968.227175,
+      "expires": 1814341968.116552,
       "httpOnly": true,
       "secure": true,
       "sameSite": "None"
     },
     {
       "name": "incap_ses_348_878969",
-      "value": "xvLyImC5lXQxpdlNzVjUBAeIRGoAAAAAtWuIY7BIVClG98P2PcD9AA==",
+      "value": "GggOK1/iy2iZa9tNzVjUBN2LRGoAAAAAt+E8wjpPKXy4IY+dYZVD5A==",
       "domain": ".signaturetravelnetwork.com",
       "path": "/",
       "expires": -1,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
+    },
+    {
+      "name": "FIRSTNAME",
+      "value": "Gregorio",
+      "domain": "www.signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1782963627.368095,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "LASTNAME",
+      "value": "Bueno%20Gaitan",
+      "domain": "www.signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1782963627.368662,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "EMAIL",
+      "value": "greg%40travelwithbears%2Ecom",
+      "domain": "www.signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1782963627.368891,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "USERID",
+      "value": "71094",
+      "domain": "www.signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1782963627.369245,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "PRIVLEDGE",
+      "value": "AGENT",
+      "domain": "www.signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1782963627.369428,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "AGENCYID",
+      "value": "3462",
+      "domain": "www.signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1782963627.369532,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "USES_HTML_EDITOR",
+      "value": "1",
+      "domain": "www.signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1782963627.369573,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
     }
   ],
-  "origins": []
+  "origins": [
+    {
+      "origin": "https://www.signaturetravelnetwork.com",
+      "localStorage": [
+        {
+          "name": "audioeye_reader_settings",
+          "value": "{\"value\":\"{\\\"c_big\\\":0,\\\"rg\\\":0,\\\"memph\\\":0,\\\"contrast_setting\\\":0,\\\"colorshift_setting\\\":0,\\\"text_size_setting\\\":0,\\\"space_setting\\\":0,\\\"font_setting\\\":0,\\\"k\\\":0,\\\"k_disable_default\\\":0,\\\"hlt\\\":0,\\\"disable_animations\\\":0,\\\"display_alt_desc\\\":0}\",\"expiration\":1783453229458}"
+        },
+        {
+          "name": "has-searches",
+          "value": "[]"
+        },
+        {
+          "name": "has-search-timer",
+          "value": "null"
+        },
+        {
+          "name": "audioeye_at_start_message",
+          "value": "{\"value\":true}"
+        }
+      ]
+    }
+  ]
 }
