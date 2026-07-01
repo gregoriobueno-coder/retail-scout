@@ -44,7 +44,10 @@ async function loginSignature() {
 
   console.log('[Signature Auth] Attempting automated credential-based login...');
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext();
+  const context = await browser.newContext({
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    viewport: { width: 1280, height: 800 }
+  });
   const page = await context.newPage();
 
   try {
@@ -106,7 +109,11 @@ async function scrapeSignature() {
     }
 
     browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({ storageState: authStatePath });
+    const context = await browser.newContext({
+      storageState: authStatePath,
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      viewport: { width: 1280, height: 800 }
+    });
     const page = await context.newPage();
 
     // Use the custom intranet search URL provided by the user
