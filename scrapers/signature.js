@@ -4,19 +4,18 @@ const fs = require('fs');
 
 const authStatePath = path.join(__dirname, '..', 'auth', 'signature-state.json');
 
-async function loginSignature() {
-  console.log('[Signature Auth] Launching headful browser for manual one-time login...');
+async function runManualLoginFallback() {
+  console.log('[Signature Auth] Launching visible browser for manual login fallback...');
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  await page.goto('https://www.signaturetravelnetwork.com/utils/login/index.cfm', {
-    waitUntil: 'load'
-  });
-
-  console.log('[Signature Auth] Please enter your credentials and login. Watching page for authentication completion...');
-  
   try {
+    await page.goto('https://www.signaturetravelnetwork.com/utils/login/index.cfm', {
+      waitUntil: 'load'
+    });
+
+    console.log('[Signature Auth] Please log in manually inside the browser window...');
     await page.waitForURL('**/customSearchResults.cfm**', { timeout: 120000 });
     
     const authDir = path.dirname(authStatePath);
@@ -27,9 +26,73 @@ async function loginSignature() {
     await context.storageState({ path: authStatePath });
     console.log(`[Signature Auth] Authentication state saved successfully to ${authStatePath}`);
   } catch (err) {
-    console.error('[Signature Auth] Authentication failed or timed out:', err.message);
+    console.error('[Signature Auth] Manual login fallback failed or timed out:', err.message);
   } finally {
     await browser.close();
+  }
+}
+
+async function loginSignature() {
+  const username = process.env.SIGNATURE_USERNAME;
+  const password = process.env.SIGNATURE_PASSWORD;
+
+  if (!username || !password) {
+    console.log('[Signature Auth] Credentials not found in .env. Falling back to manual browser login...');
+    await runManualLoginFallback();
+    return;
+  }
+
+  console.log('[Signature Auth] Attempting automated credential-based login...');
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  try {
+    await page.goto('https://www.signaturetravelnetwork.com/utils/login/index.cfm', {
+      waitUntil: 'networkidle',
+      timeout: 30000
+    });
+
+    const userInput = await page.$('input[name*="user" i], input[name*="email" i], input[type="text"], input[type="email"]');
+    const passInput = await page.$('input[name*="pass" i], input[type="password"]');
+    const submitBtn = await page.$('input[type="submit"], button[type="submit"], button:has-text("Login" i), button:has-text("Sign In" i)');
+
+    if (!userInput || !passInput) {
+      throw new Error('Auto-login fields not found.');
+    }
+
+    await userInput.fill(username);
+    await passInput.fill(password);
+
+    if (submitBtn) {
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 }),
+        submitBtn.click()
+      ]);
+    } else {
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 }),
+        passInput.press('Enter')
+      ]);
+    }
+
+    console.log('[Signature Auth] Auto-login submitted. Saving session state...');
+    const authDir = path.dirname(authStatePath);
+    if (!fs.existsSync(authDir)) {
+      fs.mkdirSync(authDir, { recursive: true });
+    }
+    await context.storageState({ path: authStatePath });
+    console.log(`[Signature Auth] Authentication state saved to ${authStatePath}`);
+
+  } catch (err) {
+    console.warn('[Signature Auth] Auto-login failed:', err.message);
+    await browser.close();
+    await runManualLoginFallback();
+    return;
+  } finally {
+    try {
+      await browser.close();
+    } catch (e) {}
   }
 }
 
