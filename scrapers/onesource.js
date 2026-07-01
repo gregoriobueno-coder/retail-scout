@@ -21,7 +21,7 @@ async function scrapeOneSourcePublic() {
 
     await page.goto('https://www.princess.com/cruise-search/results', {
       waitUntil: 'networkidle',
-      timeout: 10000
+      timeout: 30000
     });
 
     await browser.close();

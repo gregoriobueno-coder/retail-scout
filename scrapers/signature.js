@@ -146,7 +146,7 @@ async function scrapeSignature() {
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       viewport: { width: 1280, height: 800 }
     });
-    const page = await context.newPage();
+    let page = await context.newPage();
 
     // Use the custom intranet search URL provided by the user
     const startUrl = 'https://www.signaturetravelnetwork.com/utils/cruiseSearch/customSearchResults.cfm?sortType=date&cruiseType=&departMonth=null&departYear=null&fromDate=&toDate=&startLength=1&endLength=20&priceStart=0&priceEnd=4100&offerType=cse&offerType=privateCollection&offerType=exclusive&advancedOnly=1&advancedFlag=1&adFlag=1&type=intranet&agency_id=3462&utp=AGENT&userid=71094';
@@ -154,8 +154,39 @@ async function scrapeSignature() {
     console.log(`[Signature Scraper] Navigating to Signature Intranet custom search results...`);
     await page.goto(startUrl, {
       waitUntil: 'domcontentloaded',
-      timeout: 30000
+      timeout: 45000
     });
+
+    // Check if we need to refresh the session
+    const pageTitle = await page.title();
+    const currentUrl = page.url();
+    const isError = pageTitle.toLowerCase().includes('error') || currentUrl.includes('login') || currentUrl.includes('utp=consumer');
+
+    if (isError) {
+      console.log('[Signature Scraper] Session expired or invalid. Attempting to refresh login...');
+      await browser.close();
+      
+      // Run login to refresh signature-state.json
+      await loginSignature();
+      
+      // Re-launch browser with refreshed state
+      browser = await chromium.launch({
+        headless: headless,
+        args: ['--disable-blink-features=AutomationControlled']
+      });
+      const newContext = await browser.newContext({
+        storageState: authStatePath,
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        viewport: { width: 1280, height: 800 }
+      });
+      page = await newContext.newPage();
+      
+      console.log(`[Signature Scraper] Re-navigating to results with fresh session...`);
+      await page.goto(startUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: 45000
+      });
+    }
 
     const normalizedDeals = [];
     let currentPage = 1;

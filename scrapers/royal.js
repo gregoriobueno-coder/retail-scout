@@ -22,7 +22,7 @@ async function scrapeRoyalCaribbean() {
 
     await page.goto('https://www.royalcaribbean.com/cruises/', {
       waitUntil: 'networkidle',
-      timeout: 10000
+      timeout: 30000
     });
 
     await browser.close();

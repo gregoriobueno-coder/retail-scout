@@ -29,7 +29,7 @@ async function scrapeDisneyCruiseLine() {
     // Navigate to the main list screen
     await page.goto('https://disneycruise.disney.go.com/cruises-destinations/list/', {
       waitUntil: 'networkidle',
-      timeout: 10000
+      timeout: 30000
     });
 
     await browser.close();

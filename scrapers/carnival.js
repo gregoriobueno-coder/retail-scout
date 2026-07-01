@@ -22,7 +22,7 @@ async function scrapeCarnival() {
 
     await page.goto('https://www.carnival.com/cruise-search', {
       waitUntil: 'networkidle',
-      timeout: 10000
+      timeout: 30000
     });
 
     await browser.close();
