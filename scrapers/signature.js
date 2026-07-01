@@ -21,17 +21,18 @@ async function runManualLoginFallback() {
   const page = await context.newPage();
 
   try {
-    console.log('[Signature Auth] Navigating to Signature SigNet Portal...');
-    await page.goto('https://www.signaturetravelnetwork.com/signet/', {
+    console.log('[Signature Auth] Navigating to Signature Homepage...');
+    await page.goto('https://www.signaturetravelnetwork.com/index.cfm', {
       waitUntil: 'load',
       timeout: 45000
     });
 
     console.log('\n==================================================');
     console.log('ACTION REQUIRED:');
-    console.log('1. Log in manually inside the browser window.');
-    console.log('2. Make sure you can see the dashboard or intranet page.');
-    console.log('3. Press [ENTER] in this terminal when you are fully logged in.');
+    console.log('1. Click the "Login" button on the upper right of the page.');
+    console.log('2. Enter your credentials and sign in.');
+    console.log('3. Once you can see your intranet dashboard or search results,');
+    console.log('   return here and press [ENTER] in the terminal.');
     console.log('==================================================\n');
 
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
