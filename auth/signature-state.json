@@ -1,0 +1,33 @@
+{
+  "cookies": [
+    {
+      "name": "visid_incap_878969",
+      "value": "CXw2MXoYR6Gjk7/D97p5yCuK/mkAAAAAQUIPAAAAAAAEjO+qNvAwGYKKcgjUAkW1",
+      "domain": ".signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1809756982.173644,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "incap_ses_348_878969",
+      "value": "eJdnNFT2oWb2KtJNzVjUBJ95RGoAAAAA8HT+XMbNSwPZDYOaB/ADYA==",
+      "domain": ".signaturetravelnetwork.com",
+      "path": "/",
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "nlbi_878969",
+      "value": "MrglCKDhYnypYOB7AujvJQAAAAA8czNbfBgPwTBF8JMj5Gjc",
+      "domain": ".signaturetravelnetwork.com",
+      "path": "/",
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    }
+  ],
+  "origins": []
+}

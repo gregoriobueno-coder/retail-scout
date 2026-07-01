@@ -10,17 +10,15 @@ async function loginSignature() {
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  await page.goto('https://agent.signaturetravelnetwork.com/login', {
+  await page.goto('https://www.signaturetravelnetwork.com/utils/login/index.cfm', {
     waitUntil: 'load'
   });
 
   console.log('[Signature Auth] Please enter your credentials and login. Watching page for authentication completion...');
   
-  // Wait for dashboard URL or user to close
   try {
-    await page.waitForURL('**/dashboard**', { timeout: 120000 });
+    await page.waitForURL('**/customSearchResults.cfm**', { timeout: 120000 });
     
-    // Save storage state
     const authDir = path.dirname(authStatePath);
     if (!fs.existsSync(authDir)) {
       fs.mkdirSync(authDir, { recursive: true });
@@ -48,78 +46,109 @@ async function scrapeSignature() {
     const context = await browser.newContext({ storageState: authStatePath });
     const page = await context.newPage();
 
-    // Navigate to Group Space Cruise Inventory
-    await page.goto('https://agent.signaturetravelnetwork.com/cruises/group-cruise-space', {
-      waitUntil: 'networkidle',
-      timeout: 15000
+    // Use the custom intranet search URL provided by the user
+    const startUrl = 'https://www.signaturetravelnetwork.com/utils/cruiseSearch/customSearchResults.cfm?sortType=date&cruiseType=&departMonth=null&departYear=null&fromDate=&toDate=&startLength=1&endLength=20&priceStart=0&priceEnd=4100&offerType=cse&offerType=privateCollection&offerType=exclusive&advancedOnly=1&advancedFlag=1&adFlag=1&type=intranet&agency_id=3462&utp=AGENT&userid=71094';
+    
+    console.log(`[Signature Scraper] Navigating to Signature Intranet custom search results...`);
+    await page.goto(startUrl, {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000
     });
 
-    // Wait for data table to render
-    await page.waitForSelector('table', { timeout: 15000 });
+    const normalizedDeals = [];
+    let currentPage = 1;
+    const maxPages = 15; // Safe pagination limit per run to prevent memory issues
 
-    const deals = await page.evaluate(() => {
-      const rows = Array.from(document.querySelectorAll('table tr'));
-      const results = [];
+    while (currentPage <= maxPages) {
+      console.log(`[Signature Scraper] Scraping page ${currentPage}...`);
       
-      for (const row of rows) {
-        const cells = Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim());
-        if (cells.length < 5) continue; // Skip headers / small rows
+      // Wait for table of results to render
+      try {
+        await page.waitForSelector('table', { timeout: 10000 });
+      } catch (err) {
+        console.warn(`[Signature Scraper] No table found on page ${currentPage}. Ending pagination.`);
+        break;
+      }
+
+      // Parse the table cells dynamically
+      const pageDeals = await page.evaluate(() => {
+        const rows = Array.from(document.querySelectorAll('table tr'));
+        const results = [];
         
-        // Find cells matching Date format (e.g. MM/DD/YYYY or YYYY-MM-DD)
-        const dateIdx = cells.findIndex(c => /\d{1,2}\/\d{1,2}\/\d{4}/.test(c) || /\d{4}-\d{2}-\d{2}/.test(c));
-        // Find cells matching Price format (e.g. $899 or $1,200)
-        const priceIdx = cells.findIndex(c => /\$\d+/.test(c));
-        
-        if (dateIdx !== -1 && priceIdx !== -1) {
-          results.push({
-            brand: cells[0] || 'Unknown Brand',
-            ship: cells[1] || 'Unknown Ship',
-            sail_date: cells[dateIdx],
-            nights: cells[dateIdx - 1] || '7',
-            itinerary: cells[dateIdx + 1] || 'Signature Group Space Deal',
-            category: cells[priceIdx - 1] || 'Balcony',
-            priceStr: cells[priceIdx]
+        for (const row of rows) {
+          const cells = Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim());
+          if (cells.length < 5) continue; // Skip headers/empty rows
+          
+          // Match Date format (e.g. 10/12/2026 or 2026-10-12)
+          const dateIdx = cells.findIndex(c => /\d{1,2}\/\d{1,2}\/\d{4}/.test(c) || /\d{4}-\d{2}-\d{2}/.test(c));
+          // Match Price format (e.g. $899 or $1,200)
+          const priceIdx = cells.findIndex(c => /\$\d+/.test(c));
+          
+          if (dateIdx !== -1 && priceIdx !== -1) {
+            results.push({
+              brand: cells[0] || 'Unknown Brand',
+              ship: cells[1] || 'Unknown Ship',
+              sail_date: cells[dateIdx],
+              nights: cells[dateIdx - 1] || '7',
+              itinerary: cells[dateIdx + 1] || 'Signature Group Cruise Space',
+              category: cells[priceIdx - 1] || 'Balcony',
+              priceStr: cells[priceIdx]
+            });
+          }
+        }
+        return results;
+      });
+
+      console.log(`[Signature Scraper] Extracted ${pageDeals.length} deals on page ${currentPage}.`);
+      
+      for (const d of pageDeals) {
+        const price = parseInt(d.priceStr.replace(/[^0-9]/g, '')) || 0;
+        if (price > 0) {
+          let cleanDate = d.sail_date;
+          try {
+            cleanDate = new Date(d.sail_date).toISOString().split('T')[0];
+          } catch (e) {}
+
+          normalizedDeals.push({
+            sailing_id: `signature_${d.brand.toLowerCase().replace(/[^a-z]/g, '')}_${d.ship.toLowerCase().replace(/[^a-z]/g, '')}_${cleanDate.replace(/[^0-9]/g, '')}`,
+            brand: d.brand,
+            ship: d.ship,
+            sail_date: cleanDate,
+            nights: parseInt(d.nights) || 7,
+            itinerary: d.itinerary,
+            region: 'Global / Block Space',
+            category: d.category,
+            rate_type: 'signature_group',
+            base_rate: price,
+            taxes_fees: 0
           });
         }
       }
-      return results;
-    });
 
-    console.log(`[Signature Scraper] Successfully extracted ${deals.length} group space rows from DOM.`);
-
-    const normalized = [];
-    for (const d of deals) {
-      const price = parseInt(d.priceStr.replace(/[^0-9]/g, '')) || 0;
-      if (price > 0) {
-        let cleanDate = d.sail_date;
-        try {
-          cleanDate = new Date(d.sail_date).toISOString().split('T')[0];
-        } catch (e) {}
-
-        normalized.push({
-          sailing_id: `signature_${d.brand.toLowerCase().replace(/[^a-z]/g, '')}_${d.ship.toLowerCase().replace(/[^a-z]/g, '')}_${cleanDate.replace(/[^0-9]/g, '')}`,
-          brand: d.brand,
-          ship: d.ship,
-          sail_date: cleanDate,
-          nights: parseInt(d.nights) || 7,
-          itinerary: d.itinerary,
-          region: 'Global / Block Space',
-          category: d.category,
-          rate_type: 'signature_group',
-          base_rate: price,
-          taxes_fees: 0
-        });
+      // Check and navigate to next page
+      // ColdFusion search result pages often list pagination links as "Next", "Next >>", or arrows
+      const nextButton = await page.$('a:has-text("Next"), a:has-text("next"), a:has-text(">")');
+      if (nextButton) {
+        currentPage++;
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
+          nextButton.click()
+        ]);
+      } else {
+        console.log('[Signature Scraper] No "Next" page link found. End of results.');
+        break;
       }
     }
 
     await browser.close();
-    return normalized;
+    console.log(`[Signature Scraper] Total signature deals scraped: ${normalizedDeals.length}`);
+    return normalizedDeals;
 
   } catch (err) {
     if (browser) await browser.close();
     console.warn(`[Signature Scraper] Group scrape failed (${err.message}). Entering Sandbox Simulation Mode...`);
     
-    // Simulation Mode Fallback Data (Signature Travel Network Block Fares)
+    // Fallback Simulation Data
     const mockVoyages = [
       {
         sailingId: 'SB_STN_CEL_20261017',
@@ -130,7 +159,7 @@ async function scrapeSignature() {
         name: '7-Night Western Caribbean (Signature Block Space)',
         region: 'Caribbean',
         rates: [
-          { category: 'Balcony', price: 1650, taxes: 145 } // Standard retail balc is $1950, so signature has a $300 discount!
+          { category: 'Balcony', price: 1650, taxes: 145 }
         ]
       },
       {
@@ -142,7 +171,7 @@ async function scrapeSignature() {
         name: '7-Night Western Caribbean (Signature Block Space)',
         region: 'Caribbean',
         rates: [
-          { category: 'Verandah', price: 4100, taxes: 185 } // DCL retail verandah is $4600!
+          { category: 'Verandah', price: 4100, taxes: 185 }
         ]
       },
       {
@@ -154,7 +183,7 @@ async function scrapeSignature() {
         name: '7-Night Western Caribbean (Signature Block Space)',
         region: 'Caribbean',
         rates: [
-          { category: 'Inside', price: 729, taxes: 165 } // Carnival retail inside is $929!
+          { category: 'Inside', price: 729, taxes: 165 }
         ]
       }
     ];
