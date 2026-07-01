@@ -64,10 +64,19 @@ async function scrapeSignature() {
       
       // Wait for table of results to render
       try {
-        await page.waitForSelector('table', { timeout: 10000 });
+        await page.waitForSelector('table', { timeout: 15000 });
       } catch (err) {
-        console.warn(`[Signature Scraper] No table found on page ${currentPage}. Ending pagination.`);
-        break;
+        console.warn(`[Signature Scraper] No table found on page ${currentPage}. Current URL: ${page.url()}`);
+        
+        const screenshotPath = path.join(__dirname, '..', 'inspect_signature_error.png');
+        await page.screenshot({ path: screenshotPath });
+        console.log(`[Signature Scraper] Saved inspection screenshot to ${screenshotPath}`);
+        
+        const htmlPath = path.join(__dirname, '..', 'inspect_signature_error.html');
+        fs.writeFileSync(htmlPath, await page.content(), 'utf8');
+        console.log(`[Signature Scraper] Saved HTML source to ${htmlPath}`);
+        
+        throw err;
       }
 
       // Parse the table cells dynamically
