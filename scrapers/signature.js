@@ -271,16 +271,11 @@ async function scrapeSignature() {
       }
 
       // Check and navigate to next page
-      // ColdFusion search result pages often list pagination links as "Next", "Next >>", or arrows
-      const nextButton = await page.$('a:has-text("Next"), a:has-text("next"), a:has-text(">")');
-      if (nextButton) {
-        currentPage++;
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
-          nextButton.click()
-        ]);
+      currentPage++;
+      if (currentPage <= maxPages) {
+        const nextUrl = `${startUrl}&page=${currentPage}`;
+        await page.goto(nextUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
       } else {
-        console.log('[Signature Scraper] No "Next" page link found. End of results.');
         break;
       }
     }
