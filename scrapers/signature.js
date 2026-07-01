@@ -159,7 +159,7 @@ async function scrapeSignature() {
 
     const normalizedDeals = [];
     let currentPage = 1;
-    const maxPages = 15; // Safe pagination limit per run to prevent memory issues
+    const maxPages = parseInt(process.env.SIGNATURE_MAX_PAGES) || 15; // Controlled via .env configuration
 
     while (currentPage <= maxPages) {
       console.log(`[Signature Scraper] Scraping page ${currentPage}...`);
