@@ -4,19 +4,30 @@ const fs = require('fs');
 
 const authStatePath = path.join(__dirname, '..', 'auth', 'signature-state.json');
 
+const startUrl = 'https://www.signaturetravelnetwork.com/utils/cruiseSearch/customSearchResults.cfm?sortType=date&cruiseType=&departMonth=null&departYear=null&fromDate=&toDate=&startLength=1&endLength=20&priceStart=0&priceEnd=4100&offerType=cse&offerType=privateCollection&offerType=exclusive&advancedOnly=1&advancedFlag=1&adFlag=1&type=intranet&agency_id=3462&utp=AGENT&userid=71094';
+
 async function runManualLoginFallback() {
   console.log('[Signature Auth] Launching visible browser for manual login fallback...');
-  const browser = await chromium.launch({ headless: false });
-  const context = await browser.newContext();
+  const browser = await chromium.launch({
+    headless: false,
+    args: ['--disable-blink-features=AutomationControlled']
+  });
+  const context = await browser.newContext({
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    viewport: { width: 1280, height: 800 }
+  });
   const page = await context.newPage();
 
   try {
-    await page.goto('https://www.signaturetravelnetwork.com/utils/login/index.cfm', {
-      waitUntil: 'load'
+    console.log('[Signature Auth] Navigating to search URL to trigger login redirection...');
+    await page.goto(startUrl, {
+      waitUntil: 'load',
+      timeout: 45000
     });
 
     console.log('[Signature Auth] Please log in manually inside the browser window...');
-    await page.waitForURL('**/customSearchResults.cfm**', { timeout: 120000 });
+    // Wait for the URL to return to the search page after successful login
+    await page.waitForURL('**/customSearchResults.cfm**', { timeout: 180000 });
     
     const authDir = path.dirname(authStatePath);
     if (!fs.existsSync(authDir)) {
@@ -55,9 +66,10 @@ async function loginSignature() {
   const page = await context.newPage();
 
   try {
-    await page.goto('https://www.signaturetravelnetwork.com/utils/login/index.cfm', {
+    console.log('[Signature Auth] Navigating to search URL to trigger login redirection...');
+    await page.goto(startUrl, {
       waitUntil: 'networkidle',
-      timeout: 30000
+      timeout: 45000
     });
 
     const userInput = await page.$('input[name*="user" i], input[name*="email" i], input[type="text"], input[type="email"]');
