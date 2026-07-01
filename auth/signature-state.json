@@ -1,30 +1,52 @@
 {
   "cookies": [
     {
-      "name": "visid_incap_878969",
-      "value": "CXw2MXoYR6Gjk7/D97p5yCuK/mkAAAAAQUIPAAAAAAAEjO+qNvAwGYKKcgjUAkW1",
+      "name": "CFID",
+      "value": "467125731",
+      "domain": "www.signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1817436168.225665,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "CFTOKEN",
+      "value": "93314906",
+      "domain": "www.signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1817436168.227073,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "nlbi_878969",
+      "value": "MZK+EzBSpzE6iQXVAujvJQAAAABmlb40wixE+a0vRb7ccUCP",
       "domain": ".signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1809756982.173644,
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "visid_incap_878969",
+      "value": "Pdlw2eYBSCe5E8ht3W6nwweIRGoAAAAAQUIPAAAAAACMZuJJyks6X0g3Fq6O1Z2r",
+      "domain": ".signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1814341968.227175,
       "httpOnly": true,
       "secure": true,
       "sameSite": "None"
     },
     {
       "name": "incap_ses_348_878969",
-      "value": "eJdnNFT2oWb2KtJNzVjUBJ95RGoAAAAA8HT+XMbNSwPZDYOaB/ADYA==",
+      "value": "xvLyImC5lXQxpdlNzVjUBAeIRGoAAAAAtWuIY7BIVClG98P2PcD9AA==",
       "domain": ".signaturetravelnetwork.com",
       "path": "/",
+      "expires": -1,
       "httpOnly": false,
-      "secure": true,
-      "sameSite": "None"
-    },
-    {
-      "name": "nlbi_878969",
-      "value": "MrglCKDhYnypYOB7AujvJQAAAAA8czNbfBgPwTBF8JMj5Gjc",
-      "domain": ".signaturetravelnetwork.com",
-      "path": "/",
-      "httpOnly": true,
       "secure": true,
       "sameSite": "None"
     }

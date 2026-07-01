@@ -6,6 +6,8 @@ const authStatePath = path.join(__dirname, '..', 'auth', 'signature-state.json')
 
 const startUrl = 'https://www.signaturetravelnetwork.com/utils/cruiseSearch/customSearchResults.cfm?sortType=date&cruiseType=&departMonth=null&departYear=null&fromDate=&toDate=&startLength=1&endLength=20&priceStart=0&priceEnd=4100&offerType=cse&offerType=privateCollection&offerType=exclusive&advancedOnly=1&advancedFlag=1&adFlag=1&type=intranet&agency_id=3462&utp=AGENT&userid=71094';
 
+const readline = require('readline');
+
 async function runManualLoginFallback() {
   console.log('[Signature Auth] Launching visible browser for manual login fallback...');
   const browser = await chromium.launch({
@@ -19,16 +21,25 @@ async function runManualLoginFallback() {
   const page = await context.newPage();
 
   try {
-    console.log('[Signature Auth] Navigating to search URL to trigger login redirection...');
-    await page.goto(startUrl, {
+    console.log('[Signature Auth] Navigating to Signature SigNet Portal...');
+    await page.goto('https://www.signaturetravelnetwork.com/signet/', {
       waitUntil: 'load',
       timeout: 45000
     });
 
-    console.log('[Signature Auth] Please log in manually inside the browser window...');
-    // Wait for the URL to return to the search page after successful login
-    await page.waitForURL('**/customSearchResults.cfm**', { timeout: 180000 });
-    
+    console.log('\n==================================================');
+    console.log('ACTION REQUIRED:');
+    console.log('1. Log in manually inside the browser window.');
+    console.log('2. Make sure you can see the dashboard or intranet page.');
+    console.log('3. Press [ENTER] in this terminal when you are fully logged in.');
+    console.log('==================================================\n');
+
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    await new Promise(res => rl.question('Press [ENTER] when ready to capture session: ', () => {
+      rl.close();
+      res();
+    }));
+
     const authDir = path.dirname(authStatePath);
     if (!fs.existsSync(authDir)) {
       fs.mkdirSync(authDir, { recursive: true });
@@ -37,7 +48,7 @@ async function runManualLoginFallback() {
     await context.storageState({ path: authStatePath });
     console.log(`[Signature Auth] Authentication state saved successfully to ${authStatePath}`);
   } catch (err) {
-    console.error('[Signature Auth] Manual login fallback failed or timed out:', err.message);
+    console.error('[Signature Auth] Manual login fallback failed:', err.message);
   } finally {
     await browser.close();
   }
