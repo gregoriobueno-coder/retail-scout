@@ -92,6 +92,11 @@ function generateHtml(sailings, history, hasLogo) {
           max_price: maxRate,
           price_drop: priceDrop,
           percent_drop: percentDrop,
+          ports: s.ports || '',
+          promotion_type: s.promotion_type || '',
+          incentive: s.incentive || '',
+          theme: s.theme || '',
+          space_type: s.space_type || 'Signature',
           history: logs.map(l => ({ price: l.base_rate, date: l.last_checked }))
         });
       }
@@ -129,25 +134,27 @@ function generateHtml(sailings, history, hasLogo) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Retail Cruise Scout - Wandering Bear Travel Agency</title>
+  <title>Wandering Bear Retail Scout - Premium Cruise Fares & Group Space</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   
   <style>
     :root {
-      --bg-warm: #f6f3eb;
+      --bg-warm: #f5f0e3;
       --card-bg: #ffffff;
-      --card-border: #e1dacb;
-      --espresso: #2b1810;
+      --card-border: #e6dfcf;
+      --espresso: #3d1f0c;
+      --espresso-light: #5a3f2d;
       --cocoa-gray: #7a6b63;
-      --terracotta: #cf5230;
-      --terracotta-light: rgba(207, 82, 48, 0.1);
-      --seafoam-teal: #46958a;
-      --seafoam-light: rgba(70, 149, 138, 0.15);
-      --amber: #d68d45;
-      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      --accent-mint: #1bbc9b;
+      --accent-mint-hover: #16a085;
+      --accent-mint-light: rgba(27, 188, 155, 0.1);
+      --terracotta: #c94020;
+      --terracotta-light: rgba(201, 64, 32, 0.08);
+      --amber: #f3a46b;
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     * {
@@ -157,15 +164,16 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Montserrat', sans-serif;
       background-color: var(--bg-warm);
       color: var(--espresso);
       min-height: 100vh;
-      padding: 2rem 1.5rem;
+      padding: 2.5rem 1.5rem;
+      line-height: 1.5;
     }
 
     .container {
-      max-width: 1400px;
+      max-width: 1440px;
       margin: 0 auto;
       display: none;
     }
@@ -186,12 +194,12 @@ function generateHtml(sailings, history, hasLogo) {
     .lock-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 28px;
+      border-radius: 20px;
       padding: 3rem 2rem;
       max-width: 420px;
       width: 90%;
       text-align: center;
-      box-shadow: 0 12px 40px rgba(43, 24, 16, 0.08);
+      box-shadow: 0 10px 30px rgba(61, 31, 12, 0.06);
     }
 
     .lock-logo-wrapper {
@@ -201,14 +209,16 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     .lock-logo {
-      height: 100px;
+      height: 110px;
       object-fit: contain;
     }
 
     .lock-card h2 {
-      font-family: 'Outfit', sans-serif;
-      font-weight: 800;
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 1.8rem;
       margin-bottom: 0.5rem;
+      color: var(--espresso);
     }
 
     .lock-card p {
@@ -219,9 +229,9 @@ function generateHtml(sailings, history, hasLogo) {
 
     .pw-input {
       width: 100%;
-      background: var(--bg-warm);
+      background: #faf8f5;
       border: 1px solid var(--card-border);
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 0.9rem 1.2rem;
       color: var(--espresso);
       font-size: 1rem;
@@ -233,16 +243,16 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     .pw-input:focus {
-      border-color: var(--terracotta);
-      box-shadow: 0 0 12px rgba(207, 82, 48, 0.2);
+      border-color: var(--accent-mint);
+      box-shadow: 0 0 10px rgba(27, 188, 155, 0.2);
     }
 
     .pw-btn {
       width: 100%;
-      background: var(--terracotta);
+      background: var(--accent-mint);
       color: #ffffff;
       border: none;
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 0.9rem;
       font-size: 1rem;
       font-weight: 700;
@@ -251,12 +261,12 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     .pw-btn:hover {
-      background: #b43c22;
-      box-shadow: 0 6px 20px rgba(207, 82, 48, 0.3);
+      background: var(--accent-mint-hover);
+      box-shadow: 0 4px 15px rgba(27, 188, 155, 0.25);
     }
 
     .error-msg {
-      color: #d23f30;
+      color: var(--terracotta);
       font-size: 0.85rem;
       margin-top: 1rem;
       display: none;
@@ -275,13 +285,13 @@ function generateHtml(sailings, history, hasLogo) {
     header {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 24px;
-      padding: 1.5rem 2rem;
-      margin-bottom: 2rem;
+      border-radius: 20px;
+      padding: 1.5rem 2.5rem;
+      margin-bottom: 2.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 4px 20px rgba(43, 24, 16, 0.03);
+      box-shadow: 0 4px 20px rgba(61, 31, 12, 0.02);
     }
 
     .brand-section {
@@ -291,16 +301,15 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     .header-logo {
-      height: 90px;
+      height: 75px;
       width: auto;
       object-fit: contain;
-      filter: drop-shadow(0 4px 10px rgba(43, 24, 16, 0.08));
     }
 
     .brand-section h1 {
-      font-family: 'Outfit', sans-serif;
-      font-weight: 800;
-      font-size: 2.3rem;
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 2.2rem;
       color: var(--espresso);
     }
 
@@ -311,77 +320,42 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     .stats-badge {
-      background: var(--seafoam-light);
-      border: 1px solid var(--seafoam-teal);
-      border-radius: 12px;
+      background: var(--accent-mint-light);
+      border: 1px solid var(--accent-mint);
+      border-radius: 10px;
       padding: 0.6rem 1.2rem;
       font-size: 0.9rem;
-      color: var(--seafoam-teal);
+      color: var(--accent-mint-hover);
       font-weight: 700;
-    }
-
-    .metrics-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .metric-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 4px 15px rgba(43, 24, 16, 0.02);
-    }
-
-    .metric-label {
-      color: var(--cocoa-gray);
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.5rem;
-      font-weight: 700;
-    }
-
-    .metric-value {
-      font-family: 'Outfit', sans-serif;
-      font-size: 2.1rem;
-      font-weight: 800;
-      color: var(--espresso);
     }
 
     .filter-panel {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 24px;
+      border-radius: 20px;
       padding: 2rem;
       margin-bottom: 2rem;
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
-      box-shadow: 0 4px 15px rgba(43, 24, 16, 0.02);
+      box-shadow: 0 4px 15px rgba(61, 31, 12, 0.01);
     }
 
     .filter-row-top {
       display: flex;
-      flex-wrap: wrap;
-      gap: 1.5rem;
-      align-items: center;
+      flex-direction: column;
+      gap: 1.2rem;
     }
 
     .search-wrapper {
-      flex: 1;
-      min-width: 300px;
+      width: 100%;
     }
 
     .search-input {
       width: 100%;
-      background: var(--bg-warm);
+      background: #faf8f5;
       border: 1px solid var(--card-border);
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 0.9rem 1.2rem;
       color: var(--espresso);
       font-size: 0.95rem;
@@ -390,9 +364,23 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     .search-input:focus {
-      border-color: var(--terracotta);
+      border-color: var(--accent-mint);
       background: #ffffff;
-      box-shadow: 0 0 10px rgba(207, 82, 48, 0.1);
+      box-shadow: 0 0 8px rgba(27, 188, 155, 0.1);
+    }
+
+    .filter-tabs-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .filter-tabs-label {
+      font-size: 0.8rem;
+      color: var(--cocoa-gray);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     .filter-tabs {
@@ -402,22 +390,26 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     .filter-tab {
-      background: var(--bg-warm);
+      background: #faf8f5;
       border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 0.65rem 1.2rem;
+      border-radius: 8px;
+      padding: 0.6rem 1.1rem;
       color: var(--espresso);
       cursor: pointer;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 600;
       transition: var(--transition);
     }
 
+    .filter-tab:hover {
+      border-color: var(--accent-mint);
+    }
+
     .filter-tab.active {
-      background: var(--terracotta);
+      background: var(--accent-mint);
       border-color: transparent;
       color: #ffffff;
-      box-shadow: 0 4px 12px rgba(207, 82, 48, 0.2);
+      box-shadow: 0 4px 10px rgba(27, 188, 155, 0.15);
     }
 
     .filter-row-bottom {
@@ -438,7 +430,7 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     .dropdown-label {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--cocoa-gray);
       font-weight: 700;
       text-transform: uppercase;
@@ -446,14 +438,19 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     .select-control {
-      background: var(--bg-warm);
+      background: #faf8f5;
       border: 1px solid var(--card-border);
-      border-radius: 10px;
+      border-radius: 8px;
       padding: 0.8rem 1rem;
       color: var(--espresso);
       outline: none;
       font-weight: 600;
       cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .select-control:focus {
+      border-color: var(--accent-mint);
     }
 
     .slider-container {
@@ -467,7 +464,7 @@ function generateHtml(sailings, history, hasLogo) {
     .slider-label-row {
       display: flex;
       justify-content: space-between;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--cocoa-gray);
       font-weight: 700;
       text-transform: uppercase;
@@ -490,18 +487,22 @@ function generateHtml(sailings, history, hasLogo) {
       width: 18px;
       height: 18px;
       border-radius: 50%;
-      background: var(--terracotta);
+      background: var(--accent-mint);
       cursor: pointer;
-      box-shadow: 0 0 8px rgba(207, 82, 48, 0.4);
+      box-shadow: 0 0 8px rgba(27, 188, 155, 0.3);
       transition: var(--transition);
+    }
+
+    .slider-control::-webkit-slider-thumb:hover {
+      background: var(--accent-mint-hover);
     }
 
     .table-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 24px;
+      border-radius: 20px;
       overflow: hidden;
-      box-shadow: 0 4px 20px rgba(43, 24, 16, 0.03);
+      box-shadow: 0 4px 20px rgba(61, 31, 12, 0.02);
       margin-bottom: 3rem;
     }
 
@@ -517,34 +518,33 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     th, td {
-      padding: 1.2rem 1.5rem;
+      padding: 1.2rem 1.3rem;
       border-bottom: 1px solid var(--card-border);
     }
 
     th {
-      font-family: 'Outfit', sans-serif;
+      font-size: 0.8rem;
       font-weight: 700;
       color: var(--cocoa-gray);
-      font-size: 0.85rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       cursor: pointer;
       user-select: none;
-      background: rgba(43, 24, 16, 0.01);
+      background: #faf8f5;
       transition: var(--transition);
     }
 
     th:hover {
-      background: rgba(43, 24, 16, 0.03);
+      background: #f3edd8;
       color: var(--espresso);
     }
 
     th.active-sort {
-      color: var(--terracotta);
+      color: var(--accent-mint-hover);
     }
 
     td {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       vertical-align: middle;
     }
 
@@ -553,12 +553,42 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     tr:hover td {
-      background: rgba(43, 24, 16, 0.008);
+      background: rgba(245, 240, 227, 0.25);
+    }
+
+    .itinerary-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .itinerary-name {
+      font-weight: 600;
+      color: var(--espresso);
+    }
+
+    .itinerary-ports {
+      font-size: 0.78rem;
+      color: var(--cocoa-gray);
+      font-style: italic;
+    }
+
+    .itinerary-theme-badge {
+      align-self: flex-start;
+      background: var(--accent-mint-light);
+      color: var(--accent-mint-hover);
+      border: 1px solid var(--accent-mint);
+      border-radius: 4px;
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-top: 0.2rem;
     }
 
     .portal-badge {
-      border-radius: 8px;
-      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      padding: 0.35rem 0.7rem;
       font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -567,31 +597,70 @@ function generateHtml(sailings, history, hasLogo) {
       text-align: center;
     }
 
-    .badge-signature { background: rgba(214, 141, 69, 0.1); color: var(--amber); border: 1px solid rgba(214, 141, 69, 0.2); }
-    .badge-retail { background: var(--seafoam-light); color: var(--seafoam-teal); border: 1px solid rgba(70, 149, 138, 0.2); }
+    .badge-signature {
+      background: rgba(243, 164, 107, 0.12);
+      color: #df7a2e;
+      border: 1px solid rgba(243, 164, 107, 0.25);
+    }
+    
+    .badge-tpi {
+      background: var(--accent-mint-light);
+      color: var(--accent-mint-hover);
+      border: 1px solid var(--accent-mint);
+    }
+
+    .badge-retail {
+      background: rgba(122, 107, 99, 0.08);
+      color: var(--cocoa-gray);
+      border: 1px solid rgba(122, 107, 99, 0.15);
+    }
 
     .price-value {
-      font-family: 'Outfit', sans-serif;
-      font-weight: 800;
-      color: var(--terracotta);
-      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--espresso);
+      font-size: 1.1rem;
     }
 
     .original-price {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--cocoa-gray);
       text-decoration: line-through;
       margin-right: 0.4rem;
     }
 
     .discount-badge {
-      background: rgba(0, 200, 83, 0.1);
-      color: #00c853;
+      background: var(--terracotta-light);
+      color: var(--terracotta);
+      border: 1px solid rgba(201, 64, 32, 0.2);
       font-size: 0.75rem;
       font-weight: 700;
       border-radius: 6px;
-      padding: 0.2rem 0.5rem;
-      margin-left: 0.5rem;
+      padding: 0.25rem 0.5rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .promo-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .promo-text {
+      font-size: 0.82rem;
+      color: var(--espresso-light);
+    }
+
+    .commission-badge {
+      background: rgba(0, 200, 83, 0.08);
+      color: #00c853;
+      border: 1px solid rgba(0, 200, 83, 0.2);
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.15rem 0.4rem;
+      align-self: flex-start;
       display: inline-block;
     }
 
@@ -600,8 +669,15 @@ function generateHtml(sailings, history, hasLogo) {
       font-size: 0.82rem;
       color: var(--cocoa-gray);
       border-top: 1px solid var(--card-border);
-      background: rgba(43, 24, 16, 0.005);
+      background: #faf8f5;
       font-style: italic;
+    }
+
+    .no-results {
+      padding: 3rem;
+      text-align: center;
+      color: var(--cocoa-gray);
+      font-size: 1rem;
     }
   </style>
 </head>
@@ -631,39 +707,17 @@ function generateHtml(sailings, history, hasLogo) {
       <div class="stats-badge" id="last-updated">Real-time Rates</div>
     </header>
 
-    <div class="metrics-row">
-      <div class="metric-card">
-        <span class="metric-label">Active monitored Sailings</span>
-        <span class="metric-value" id="metric-deals">0</span>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Greatest Price Drop</span>
-        <span class="metric-value" id="metric-max-drop">$0</span>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Average Cruise Fare</span>
-        <span class="metric-value" id="metric-avg-price">$0</span>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Suppliers Monitored</span>
-        <span class="metric-value" id="metric-brands">6</span>
-      </div>
-    </div>
-
     <div class="filter-panel">
       <div class="filter-row-top">
         <div class="search-wrapper">
-          <input type="text" id="search-bar" class="search-input" placeholder="Search by Ship, Itinerary, or Category..." oninput="filterAndRender()">
+          <input type="text" id="search-bar" class="search-input" placeholder="Search by Ship, Itinerary, Route, or Cabin Category..." oninput="filterAndRender()">
         </div>
         
-        <div class="filter-tabs">
-          <button class="filter-tab active" onclick="setBrandFilter('all')">All Brands</button>
-          <button class="filter-tab" onclick="setBrandFilter('disney')">Disney</button>
-          <button class="filter-tab" onclick="setBrandFilter('virgin')">Virgin Voyages</button>
-          <button class="filter-tab" onclick="setBrandFilter('royal')">Royal Caribbean</button>
-          <button class="filter-tab" onclick="setBrandFilter('celebrity')">Celebrity</button>
-          <button class="filter-tab" onclick="setBrandFilter('carnival')">Carnival</button>
-          <button class="filter-tab" onclick="setBrandFilter('princess')">Princess</button>
+        <div class="filter-tabs-wrapper">
+          <span class="filter-tabs-label">Filter by Brand</span>
+          <div class="filter-tabs" id="dynamic-brand-tabs">
+            <!-- Dynamically populated -->
+          </div>
         </div>
       </div>
 
@@ -687,6 +741,7 @@ function generateHtml(sailings, history, hasLogo) {
             <option value="all">All Rates</option>
             <option value="retail">Standard Retail Fares</option>
             <option value="signature_group">Signature Group Space</option>
+            <option value="tpi_group">TPI Block Space</option>
           </select>
         </div>
 
@@ -709,9 +764,10 @@ function generateHtml(sailings, history, hasLogo) {
               <th onclick="toggleSort('sail_date')" id="th-sail_date" class="active-sort">Sail Date</th>
               <th onclick="toggleSort('nights')" id="th-nights">Nights</th>
               <th onclick="toggleSort('ship')" id="th-ship">Ship</th>
-              <th onclick="toggleSort('itinerary')" id="th-itinerary">Itinerary</th>
+              <th onclick="toggleSort('itinerary')" id="th-itinerary">Itinerary & Route</th>
               <th onclick="toggleSort('category')" id="th-category">Cabin Category</th>
-              <th onclick="toggleSort('rate_type')" id="th-rate_type">Rate Class</th>
+              <th onclick="toggleSort('space_type')" id="th-space_type">Rate Class</th>
+              <th>Promotions & Incentives</th>
               <th onclick="toggleSort('price')" id="th-price">Base Rate (PP)*</th>
               <th>Price Drop</th>
             </tr>
@@ -823,23 +879,32 @@ function generateHtml(sailings, history, hasLogo) {
       // Filter out past voyages
       allSailings = allSailings.filter(s => new Date(s.sail_date) >= today);
 
+      // Build dynamic brand tabs
+      const uniqueBrands = ['all'];
+      allSailings.forEach(s => {
+        if (s.brand && !uniqueBrands.includes(s.brand)) {
+          uniqueBrands.push(s.brand);
+        }
+      });
+
+      const tabsWrapper = document.getElementById('dynamic-brand-tabs');
+      tabsWrapper.innerHTML = '';
+      
+      uniqueBrands.forEach(b => {
+        const btn = document.createElement('button');
+        btn.className = b === 'all' ? 'filter-tab active' : 'filter-tab';
+        btn.innerText = b === 'all' ? 'All Brands' : b;
+        btn.onclick = () => setBrandFilter(b);
+        tabsWrapper.appendChild(btn);
+      });
+
       const prices = allSailings.map(s => s.price);
-      const maxPrice = prices.length ? Math.max(...prices) : 5000;
+      const maxPrice = prices.length ? Math.max(...prices) : 10000;
       
       const slider = document.getElementById('price-slider');
       slider.max = maxPrice;
       slider.value = maxPrice;
       document.getElementById('price-slider-val').innerText = '$' + maxPrice;
-
-      // Ingest metric cards summary
-      document.getElementById('metric-deals').innerText = allSailings.length;
-      if (prices.length) {
-        const drops = allSailings.map(s => s.price_drop);
-        const maxDrop = Math.max(...drops);
-        const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
-        document.getElementById('metric-max-drop').innerText = '$' + maxDrop;
-        document.getElementById('metric-avg-price').innerText = '$' + avgPrice;
-      }
 
       filterAndRender();
     }
@@ -854,7 +919,9 @@ function generateHtml(sailings, history, hasLogo) {
       currentBrand = brand;
       const tabs = document.querySelectorAll('.filter-tab');
       tabs.forEach(tab => {
-        if (tab.innerText.toLowerCase().includes(brand === 'all' ? 'all' : brand)) {
+        if (tab.innerText === 'All Brands' && brand === 'all') {
+          tab.classList.add('active');
+        } else if (tab.innerText === brand) {
           tab.classList.add('active');
         } else {
           tab.classList.remove('active');
@@ -872,7 +939,8 @@ function generateHtml(sailings, history, hasLogo) {
       }
 
       document.querySelectorAll('th').forEach(th => th.classList.remove('active-sort'));
-      document.getElementById('th-' + column).classList.add('active-sort');
+      const activeTh = document.getElementById('th-' + column);
+      if (activeTh) activeTh.classList.add('active-sort');
       filterAndRender();
     }
 
@@ -885,15 +953,22 @@ function generateHtml(sailings, history, hasLogo) {
       let filtered = allSailings.filter(s => {
         let brandMatch = false;
         if (currentBrand === 'all') brandMatch = true;
-        else brandMatch = s.brand.toLowerCase().includes(currentBrand);
+        else brandMatch = s.brand === currentBrand;
 
         const regionMatch = regionVal === 'all' || s.region === regionVal;
-        const rateTypeMatch = rateTypeVal === 'all' || s.rate_type === rateTypeVal;
+        
+        let rateTypeMatch = false;
+        if (rateTypeVal === 'all') rateTypeMatch = true;
+        else if (rateTypeVal === 'retail') rateTypeMatch = s.rate_type !== 'signature_group';
+        else if (rateTypeVal === 'signature_group') rateTypeMatch = s.rate_type === 'signature_group' && s.space_type !== 'TPI';
+        else if (rateTypeVal === 'tpi_group') rateTypeMatch = s.space_type === 'TPI';
+
         const priceMatch = s.price <= maxPrice;
 
         const textMatch = (s.ship || '').toLowerCase().includes(query) || 
                           (s.itinerary || '').toLowerCase().includes(query) || 
                           (s.category || '').toLowerCase().includes(query) ||
+                          (s.ports || '').toLowerCase().includes(query) ||
                           (s.brand || '').toLowerCase().includes(query);
 
         return brandMatch && regionMatch && rateTypeMatch && priceMatch && textMatch;
@@ -924,12 +999,36 @@ function generateHtml(sailings, history, hasLogo) {
 
       filtered.forEach(s => {
         const tr = document.createElement('tr');
-        const rateClassBadge = s.rate_type === 'signature_group' ? 'badge-signature' : 'badge-retail';
-        const rateClassLabel = s.rate_type === 'signature_group' ? 'Signature Group' : 'Retail';
+        
+        let rateClassBadge = 'badge-retail';
+        let rateClassLabel = 'Retail Fares';
+        if (s.space_type === 'TPI') {
+          rateClassBadge = 'badge-tpi';
+          rateClassLabel = 'TPI Block';
+        } else if (s.rate_type === 'signature_group') {
+          rateClassBadge = 'badge-signature';
+          rateClassLabel = 'Signature Group';
+        }
         
         let dropMarkup = '<em>No change</em>';
         if (s.price_drop > 0) {
           dropMarkup = \`<span class="discount-badge">↓ \$\${s.price_drop} (\$\${s.percent_drop}%)</span>\`;
+        }
+
+        // Build theme markup
+        const themeMarkup = s.theme ? \`<span class="itinerary-theme-badge">\${s.theme}</span>\` : '';
+        const portsMarkup = s.ports ? \`<span class="itinerary-ports">\${s.ports}</span>\` : '';
+
+        // Build promos cell
+        let promosMarkup = '';
+        if (s.promotion_type) {
+          promosMarkup += \`<span class="promo-text">\${s.promotion_type}</span>\`;
+        }
+        if (s.incentive) {
+          promosMarkup += \`<span class="commission-badge">💰 \${s.incentive}</span>\`;
+        }
+        if (!promosMarkup) {
+          promosMarkup = '<span style="color:var(--cocoa-gray);font-style:italic;">Standard inclusions</span>';
         }
 
         tr.innerHTML = \`
@@ -937,9 +1036,20 @@ function generateHtml(sailings, history, hasLogo) {
           <td>\${formatDate(s.sail_date)}</td>
           <td>\${s.nights} Nights</td>
           <td>\${s.ship}</td>
-          <td>\${s.itinerary}</td>
+          <td>
+            <div class="itinerary-details">
+              <span class="itinerary-name">\${s.itinerary}</span>
+              \${portsMarkup}
+              \${themeMarkup}
+            </div>
+          </td>
           <td>\${s.category}</td>
           <td><span class="portal-badge \${rateClassBadge}">\${rateClassLabel}</span></td>
+          <td>
+            <div class="promo-cell">
+              \${promosMarkup}
+            </div>
+          </td>
           <td>
             \${s.price_drop > 0 ? \`<span class="original-price">\$\${s.max_price}</span>\` : ''}
             <span class="price-value">\$\${s.price}</span>
@@ -956,7 +1066,6 @@ function generateHtml(sailings, history, hasLogo) {
     }
   </script>
 </body>
-</html>
   `;
 
   // Save html file to the root of the retail-scout directory
