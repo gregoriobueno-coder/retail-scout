@@ -2,27 +2,27 @@
   "cookies": [
     {
       "name": "CFID",
-      "value": "541513845",
+      "value": "467488581",
       "domain": "www.signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1817437150.116112,
+      "expires": 1817502139.178347,
       "httpOnly": true,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "CFTOKEN",
-      "value": "67762023",
+      "value": "39395642",
       "domain": "www.signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1817437150.116495,
+      "expires": 1817502139.178728,
       "httpOnly": true,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "nlbi_878969",
-      "value": "tNrlHfRowEYADs5QAujvJQAAAACpBM/oY3Qcej/N9ZpiwCWD",
+      "value": "JbTEKZHcH09rG6UsAujvJQAAAAD0IqD8U1MBlRXdIHAXcAe0",
       "domain": ".signaturetravelnetwork.com",
       "path": "/",
       "expires": -1,
@@ -32,30 +32,40 @@
     },
     {
       "name": "visid_incap_878969",
-      "value": "LalOLY+ARW2AyFUOxW2ejN2LRGoAAAAAQUIPAAAAAADffbj9UQDOghlm+jSy/VVR",
+      "value": "D4JdAWw8Qda8qBKKdHOGMbqJRWoAAAAAQUIPAAAAAAA8CIMY2B4gHCTf3WjuKKFR",
       "domain": ".signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1814341968.116552,
+      "expires": 1814428369.178812,
       "httpOnly": true,
       "secure": true,
       "sameSite": "None"
     },
     {
-      "name": "incap_ses_348_878969",
-      "value": "GggOK1/iy2iZa9tNzVjUBN2LRGoAAAAAt+E8wjpPKXy4IY+dYZVD5A==",
+      "name": "cookiehub",
+      "value": "eyJhbnN3ZXJlZCI6dHJ1ZSwicmV2aXNpb24iOjEsImRudCI6ZmFsc2UsImFsbG93U2FsZSI6dHJ1ZSwiaW1wbGljdCI6ZmFsc2UsInJlZ2lvbiI6IiIsInRva2VuIjoiMWxIWk1yT1VtRXRrbDJUMTI2WUxrVjl6d29oZFJNTmw5V3NiT2RpM2JUM3o3ZjJjZ21ndjF4blNGNmpmdlo2USIsInRpbWVzdGFtcCI6IjIwMjYtMDctMDFUMjI6NDY6MDguMjg3WiIsImFsbEFsbG93ZWQiOnRydWUsImNhdGVnb3JpZXMiOltdLCJ2ZW5kb3JzIjpbXSwic2VydmljZXMiOltdLCJpbXBsaWNpdCI6ZmFsc2V9",
       "domain": ".signaturetravelnetwork.com",
       "path": "/",
-      "expires": -1,
+      "expires": 1814481968,
       "httpOnly": false,
-      "secure": true,
-      "sameSite": "None"
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga",
+      "value": "GA1.1.2044836667.1782942142",
+      "domain": ".signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1817505996.220667,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
     },
     {
       "name": "FIRSTNAME",
       "value": "Gregorio",
       "domain": "www.signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1782963627.368095,
+      "expires": 1783032393.780329,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
@@ -65,7 +75,7 @@
       "value": "Bueno%20Gaitan",
       "domain": "www.signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1782963627.368662,
+      "expires": 1783032393.780823,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
@@ -75,7 +85,7 @@
       "value": "greg%40travelwithbears%2Ecom",
       "domain": "www.signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1782963627.368891,
+      "expires": 1783032393.781021,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
@@ -85,7 +95,7 @@
       "value": "71094",
       "domain": "www.signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1782963627.369245,
+      "expires": 1783032393.781386,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
@@ -95,7 +105,7 @@
       "value": "AGENT",
       "domain": "www.signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1782963627.369428,
+      "expires": 1783032393.78155,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
@@ -105,7 +115,7 @@
       "value": "3462",
       "domain": "www.signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1782963627.369532,
+      "expires": 1783032393.781697,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
@@ -115,7 +125,27 @@
       "value": "1",
       "domain": "www.signaturetravelnetwork.com",
       "path": "/",
-      "expires": 1782963627.369573,
+      "expires": 1783032393.781744,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "incap_ses_348_878969",
+      "value": "k9Spd0REc2888Y1OzVjUBMmYRWoAAAAAMpaTQ3MPbNqdEAa/VHNBIA==",
+      "domain": ".signaturetravelnetwork.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_ga_5YQ883061J",
+      "value": "GS2.1.s1782953111$o3$g0$t1782953111$j60$l0$h0",
+      "domain": ".signaturetravelnetwork.com",
+      "path": "/",
+      "expires": 1817513111.769966,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
@@ -127,15 +157,15 @@
       "localStorage": [
         {
           "name": "audioeye_reader_settings",
-          "value": "{\"value\":\"{\\\"c_big\\\":0,\\\"rg\\\":0,\\\"memph\\\":0,\\\"contrast_setting\\\":0,\\\"colorshift_setting\\\":0,\\\"text_size_setting\\\":0,\\\"space_setting\\\":0,\\\"font_setting\\\":0,\\\"k\\\":0,\\\"k_disable_default\\\":0,\\\"hlt\\\":0,\\\"disable_animations\\\":0,\\\"display_alt_desc\\\":0}\",\"expiration\":1783453229458}"
-        },
-        {
-          "name": "has-searches",
-          "value": "[]"
+          "value": "{\"value\":\"{\\\"c_big\\\":0,\\\"rg\\\":0,\\\"memph\\\":0,\\\"contrast_setting\\\":0,\\\"colorshift_setting\\\":0,\\\"text_size_setting\\\":0,\\\"space_setting\\\":0,\\\"font_setting\\\":0,\\\"k\\\":0,\\\"k_disable_default\\\":0,\\\"hlt\\\":0,\\\"disable_animations\\\":0,\\\"display_alt_desc\\\":0}\",\"expiration\":1783521996716}"
         },
         {
           "name": "has-search-timer",
           "value": "null"
+        },
+        {
+          "name": "has-searches",
+          "value": "[]"
         },
         {
           "name": "audioeye_at_start_message",
