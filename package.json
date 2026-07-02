@@ -8,10 +8,13 @@
     "login": "node -e \"require('./scrapers/signature').loginSignature()\""
   },
   "dependencies": {
-    "playwright": "^1.40.0",
-    "sqlite3": "^5.1.6",
+    "axios": "^1.18.1",
     "dotenv": "^16.3.1",
+    "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",
-    "graphql": "^16.8.1"
+    "node-notifier": "^10.0.1",
+    "nodemailer": "^9.0.3",
+    "playwright": "^1.40.0",
+    "sqlite3": "^5.1.6"
   }
 }

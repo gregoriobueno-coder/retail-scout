@@ -11,56 +11,60 @@ const path = require('path');
 require('dotenv').config();
 
 async function saveDealsToDatabase(deals) {
-  return new Promise((resolve, reject) => {
-    db.serialize(() => {
-      let sailingsInserted = 0;
-      let pricesLogged = 0;
+  let sailingsInserted = 0;
+  let pricesLogged = 0;
+  const detectedDrops = [];
 
-      const insertSailing = db.prepare(`
-        INSERT OR REPLACE INTO sailings (sailing_id, brand, ship, sail_date, nights, itinerary, region)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      const logPrice = db.prepare(`
-        INSERT INTO pricing_history (sailing_id, category, rate_type, base_rate, taxes_fees)
-        VALUES (?, ?, ?, ?, ?)
-      `);
-
-      for (const d of deals) {
-        insertSailing.run(
-          d.sailing_id,
-          d.brand,
-          d.ship,
-          d.sail_date,
-          d.nights,
-          d.itinerary,
-          d.region,
-          (err) => {
-            if (err) console.error(`Failed to upsert sailing ${d.sailing_id}:`, err.message);
-          }
-        );
-        sailingsInserted++;
-
-        logPrice.run(
-          d.sailing_id,
-          d.category,
-          d.rate_type,
-          d.base_rate,
-          d.taxes_fees,
-          (err) => {
-            if (err) console.error(`Failed to log price for ${d.sailing_id}:`, err.message);
-          }
-        );
-        pricesLogged++;
-      }
-
-      insertSailing.finalize();
-      logPrice.finalize((err) => {
-        if (err) reject(err);
-        else resolve({ sailingsInserted, pricesLogged });
+  const getPrevPrice = (sailingId, category, rateType) => {
+    return new Promise((res) => {
+      db.get(`
+        SELECT base_rate FROM pricing_history
+        WHERE sailing_id = ? AND category = ? AND rate_type = ?
+        ORDER BY timestamp DESC LIMIT 1
+      `, [sailingId, category, rateType], (err, row) => {
+        if (err || !row) res(null);
+        else res(row.base_rate);
       });
     });
-  });
+  };
+
+  for (const d of deals) {
+    const prevPrice = await getPrevPrice(d.sailing_id, d.category, d.rate_type);
+    
+    if (prevPrice !== null && d.base_rate < prevPrice) {
+      const diff = prevPrice - d.base_rate;
+      const pct = Math.round((diff / prevPrice) * 100);
+      detectedDrops.push({
+        deal: d,
+        oldPrice: prevPrice,
+        newPrice: d.base_rate,
+        saving: diff,
+        pct: pct
+      });
+    }
+
+    await new Promise((res) => {
+      db.run(`
+        INSERT OR REPLACE INTO sailings (sailing_id, brand, ship, sail_date, nights, itinerary, region)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `, [d.sailing_id, d.brand, d.ship, d.sail_date, d.nights, d.itinerary, d.region], () => {
+        sailingsInserted++;
+        res();
+      });
+    });
+
+    await new Promise((res) => {
+      db.run(`
+        INSERT INTO pricing_history (sailing_id, category, rate_type, base_rate, taxes_fees)
+        VALUES (?, ?, ?, ?, ?)
+      `, [d.sailing_id, d.category, d.rate_type, d.base_rate, d.taxes_fees], () => {
+        pricesLogged++;
+        res();
+      });
+    });
+  }
+
+  return { sailingsInserted, pricesLogged, detectedDrops };
 }
 
 function pushToGit() {
@@ -138,12 +142,30 @@ async function runOrchestrator() {
 
   if (allDeals.length > 0) {
     try {
-      const { sailingsInserted, pricesLogged } = await saveDealsToDatabase(allDeals);
+      const { sailingsInserted, pricesLogged, detectedDrops } = await saveDealsToDatabase(allDeals);
       console.log('--------------------------------------------------');
       console.log(`✅ Success: Ingested ${sailingsInserted} sailings.`);
       console.log(`✅ Success: Logged ${pricesLogged} historical price updates.`);
       console.log('--------------------------------------------------');
       
+      // Dispatch alerts for any price drops
+      if (detectedDrops.length > 0) {
+        console.log(`[Orchestrator] Detected ${detectedDrops.length} price drops. Dispatching notifications...`);
+        const { sendNotification } = require('./notifier');
+        for (const drop of detectedDrops) {
+          const d = drop.deal;
+          const msg = `🚢 *${d.brand} - ${d.ship}*\n` +
+            `📅 *Sail Date*: ${d.sail_date} (${d.nights} Nights)\n` +
+            `📍 *Itinerary*: ${d.itinerary}\n` +
+            `🛏️ *Stateroom*: ${d.category} (${d.rate_type})\n` +
+            `📉 *Price Drop*: from *$${drop.oldPrice}* down to *$${drop.newPrice}*!\n` +
+            `💰 *You Save*: *$${drop.saving} (${drop.pct}%)*\n` +
+            `🌐 [View Live Dashboard](https://gregoriobueno-coder.github.io/retail-scout/)`;
+            
+          await sendNotification(msg, 'Retail TA Rate Price Drop Detected!');
+        }
+      }
+
       // Compile static dashboard index.html
       compileRetailDashboard();
 
@@ -156,7 +178,7 @@ async function runOrchestrator() {
         pushToGit();
         console.log('==================================================');
       });
-      return; // DB closure handler takes care of exit logging
+      return;
     } catch (dbErr) {
       console.error('Failed to save scraped data to SQLite database:', dbErr.message);
     }
