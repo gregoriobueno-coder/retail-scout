@@ -4,7 +4,8 @@
   "description": "Retail Cruise pricing crawler and alert engine for Wandering Bear",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "login": "node -e \"require('./scrapers/signature').loginSignature()\""
   },
   "dependencies": {
     "playwright": "^1.40.0",

@@ -160,29 +160,32 @@ async function scrapeSignature() {
     const isError = pageTitle.toLowerCase().includes('error') || currentUrl.includes('login');
 
     if (isError) {
-      console.log('[Signature Scraper] Session expired or invalid. Attempting to refresh login...');
-      await browser.close();
+      console.log('[Signature Scraper] Session expired or invalid.');
       
-      // Run login to refresh signature-state.json
-      await loginSignature();
-      
-      // Re-launch browser with refreshed state
-      browser = await chromium.launch({
-        headless: headless,
-        args: ['--disable-blink-features=AutomationControlled']
-      });
-      const newContext = await browser.newContext({
-        storageState: authStatePath,
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        viewport: { width: 1280, height: 800 }
-      });
-      page = await newContext.newPage();
-      
-      console.log(`[Signature Scraper] Re-navigating to results with fresh session...`);
-      await page.goto(startUrl, {
-        waitUntil: 'domcontentloaded',
-        timeout: 45000
-      });
+      if (process.env.SIGNATURE_USERNAME && process.env.SIGNATURE_PASSWORD) {
+        console.log('[Signature Scraper] Attempting auto-login refresh using credentials...');
+        await browser.close();
+        await loginSignature();
+        
+        browser = await chromium.launch({
+          headless: headless,
+          args: ['--disable-blink-features=AutomationControlled']
+        });
+        const newContext = await browser.newContext({
+          storageState: authStatePath,
+          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          viewport: { width: 1280, height: 800 }
+        });
+        page = await newContext.newPage();
+        
+        console.log(`[Signature Scraper] Re-navigating to results with fresh session...`);
+        await page.goto(startUrl, {
+          waitUntil: 'domcontentloaded',
+          timeout: 45000
+        });
+      } else {
+        throw new Error('Signature Travel Network session expired. Please run "npm run login" or the login command manually to capture a fresh session.');
+      }
     }
 
     const normalizedDeals = [];
