@@ -148,9 +148,6 @@ async function scrapeSignature() {
     });
     let page = await context.newPage();
 
-    // Use the custom intranet search URL provided by the user
-    const startUrl = 'https://www.signaturetravelnetwork.com/utils/cruiseSearch/customSearchResults.cfm?sortType=date&cruiseType=&departMonth=null&departYear=null&fromDate=&toDate=&startLength=1&endLength=20&priceStart=0&priceEnd=4100&offerType=cse&offerType=privateCollection&offerType=exclusive&advancedOnly=1&advancedFlag=1&adFlag=1&type=intranet&agency_id=3462&utp=AGENT&userid=71094';
-    
     console.log(`[Signature Scraper] Navigating to Signature Intranet custom search results...`);
     await page.goto(startUrl, {
       waitUntil: 'domcontentloaded',
@@ -160,7 +157,7 @@ async function scrapeSignature() {
     // Check if we need to refresh the session
     const pageTitle = await page.title();
     const currentUrl = page.url();
-    const isError = pageTitle.toLowerCase().includes('error') || currentUrl.includes('login') || currentUrl.includes('utp=consumer');
+    const isError = pageTitle.toLowerCase().includes('error') || currentUrl.includes('login');
 
     if (isError) {
       console.log('[Signature Scraper] Session expired or invalid. Attempting to refresh login...');
