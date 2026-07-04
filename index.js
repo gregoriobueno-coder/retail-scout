@@ -20,7 +20,7 @@ async function saveDealsToDatabase(deals) {
       db.get(`
         SELECT base_rate FROM pricing_history
         WHERE sailing_id = ? AND category = ? AND rate_type = ?
-        ORDER BY timestamp DESC LIMIT 1
+        ORDER BY last_checked DESC LIMIT 1
       `, [sailingId, category, rateType], (err, row) => {
         if (err || !row) res(null);
         else res(row.base_rate);
@@ -45,10 +45,30 @@ async function saveDealsToDatabase(deals) {
 
     await new Promise((res) => {
       db.run(`
-        INSERT OR REPLACE INTO sailings (sailing_id, brand, ship, sail_date, nights, itinerary, region)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `, [d.sailing_id, d.brand, d.ship, d.sail_date, d.nights, d.itinerary, d.region], () => {
-        sailingsInserted++;
+        INSERT INTO sailings (sailing_id, brand, ship, sail_date, nights, itinerary, region, ports, promotion_type, incentive, theme, space_type, released_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(sailing_id) DO UPDATE SET
+          brand=excluded.brand,
+          ship=excluded.ship,
+          sail_date=excluded.sail_date,
+          nights=excluded.nights,
+          itinerary=excluded.itinerary,
+          region=excluded.region,
+          ports=excluded.ports,
+          promotion_type=excluded.promotion_type,
+          incentive=excluded.incentive,
+          theme=excluded.theme,
+          space_type=excluded.space_type
+      `, [
+        d.sailing_id, d.brand, d.ship, d.sail_date, d.nights, d.itinerary, d.region,
+        d.ports || null, d.promotion_type || null, d.incentive || null, d.theme || null, d.space_type || null,
+        new Date().toISOString().split('T')[0]
+      ], (err) => {
+        if (err) {
+          console.error(`[DB Error] Failed to insert sailing ${d.sailing_id}:`, err.message);
+        } else {
+          sailingsInserted++;
+        }
         res();
       });
     });
@@ -57,8 +77,12 @@ async function saveDealsToDatabase(deals) {
       db.run(`
         INSERT INTO pricing_history (sailing_id, category, rate_type, base_rate, taxes_fees)
         VALUES (?, ?, ?, ?, ?)
-      `, [d.sailing_id, d.category, d.rate_type, d.base_rate, d.taxes_fees], () => {
-        pricesLogged++;
+      `, [d.sailing_id, d.category, d.rate_type, d.base_rate, d.taxes_fees], (err) => {
+        if (err) {
+          console.error(`[DB Error] Failed to log price for ${d.sailing_id}:`, err.message);
+        } else {
+          pricesLogged++;
+        }
         res();
       });
     });

@@ -24,20 +24,23 @@ async function runAccuracyTest() {
 
   // Extract first few priced deals from the live DOM
   const domDeals = await page.evaluate(() => {
-    const rows = Array.from(document.querySelectorAll('table tr'));
+    const table = document.querySelector('div#cruise_search_results_div > table');
+    if (!table) return [];
+    const rows = Array.from(table.querySelectorAll(':scope > tbody > tr, :scope > tr'));
     const headerRow = rows.find(r => r.innerText.includes('Date') && r.innerText.includes('Nights') && r.innerText.includes('Price'));
     if (!headerRow) return [];
 
-    const headers = Array.from(headerRow.querySelectorAll('th, td')).map(h => h.innerText.trim());
+    const headers = Array.from(headerRow.querySelectorAll(':scope > th, :scope > td')).map(h => h.innerText.trim());
     const dateIdx = headers.findIndex(h => h.includes('Date'));
     const shipIdx = headers.findIndex(h => h.includes('Ship') || h.includes('Cruise Line'));
     const nightsIdx = headers.findIndex(h => h.includes('Nights'));
     const priceIdx = headers.findIndex(h => h.includes('Price'));
     const itineraryIdx = headers.findIndex(h => h.includes('Title') || h.includes('Theme'));
+    const offerIdIdx = headers.findIndex(h => h.includes('Offer'));
 
     const results = [];
     for (const row of rows) {
-      const cells = Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim());
+      const cells = Array.from(row.querySelectorAll(':scope > td')).map(c => c.innerText.trim());
       if (cells.length < Math.max(dateIdx, shipIdx, nightsIdx, priceIdx)) continue;
       
       const dateText = cells[dateIdx] || '';
@@ -51,7 +54,8 @@ async function runAccuracyTest() {
           shipText: cells[shipIdx] || '',
           nights: parseInt(cells[nightsIdx]) || 7,
           itinerary: cells[itineraryIdx] || '',
-          price: price
+          price: price,
+          offerId: offerIdIdx !== -1 ? cells[offerIdIdx] || '' : ''
         });
       }
     }
@@ -68,7 +72,7 @@ async function runAccuracyTest() {
       db.get(`
         SELECT base_rate FROM pricing_history
         WHERE sailing_id = ? AND category = ? AND rate_type = ?
-        ORDER BY timestamp DESC LIMIT 1
+        ORDER BY last_checked DESC LIMIT 1
       `, [sailingId, category, rateType], (err, row) => {
         if (err || !row) resolve(null);
         else resolve(row.base_rate);
@@ -107,7 +111,9 @@ async function runAccuracyTest() {
     if (brand === 'Cunard') brand = 'Cunard Line';
     if (brand === 'Ponant Explorations') brand = 'Ponant';
 
-    const sailingId = `signature_${brand.toLowerCase().replace(/[^a-z]/g, '')}_${ship.toLowerCase().replace(/[^a-z]/g, '')}_${cleanDate.replace(/[^0-9]/g, '')}`;
+    const cleanOfferId = dom.offerId.replace(/[^0-9]/g, '');
+    const suffix = cleanOfferId ? `_${cleanOfferId}` : '';
+    const sailingId = `signature_${brand.toLowerCase().replace(/[^a-z]/g, '')}_${ship.toLowerCase().replace(/[^a-z]/g, '')}_${cleanDate.replace(/[^0-9]/g, '')}${suffix}`;
     
     const dbPrice = await queryDbPrice(sailingId, 'Group Block Stateroom', 'signature_group');
 

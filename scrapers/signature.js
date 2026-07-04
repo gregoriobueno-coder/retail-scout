@@ -1,6 +1,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
+require('dotenv').config();
 
 const authStatePath = path.join(__dirname, '..', 'auth', 'signature-state.json');
 
@@ -65,10 +66,9 @@ async function loginSignature() {
     return;
   }
 
-  console.log('[Signature Auth] Attempting automated credential-based login...');
-  const headless = process.env.SIGNATURE_HEADLESS === 'true';
+  console.log('[Signature Auth] Attempting automated credential-based login (headed)...');
   const browser = await chromium.launch({
-    headless: headless,
+    headless: false,
     args: ['--disable-blink-features=AutomationControlled']
   });
   const context = await browser.newContext({
@@ -78,45 +78,57 @@ async function loginSignature() {
   const page = await context.newPage();
 
   try {
-    console.log('[Signature Auth] Navigating to search URL to trigger login redirection...');
-    await page.goto(startUrl, {
-      waitUntil: 'networkidle',
-      timeout: 45000
-    });
+    console.log('[Signature Auth] Navigating to homepage...');
+    await page.goto('https://www.signaturetravelnetwork.com/index.cfm', { waitUntil: 'networkidle', timeout: 45000 });
 
-    const userInput = await page.$('input[name*="user" i], input[name*="email" i], input[type="text"], input[type="email"]');
-    const passInput = await page.$('input[name*="pass" i], input[type="password"]');
-    const submitBtn = await page.$('input[type="submit"], button[type="submit"], button:has-text("Login" i), button:has-text("Sign In" i)');
-
-    if (!userInput || !passInput) {
-      throw new Error('Auto-login fields not found.');
+    const acceptCookiesBtn = await page.$('button.ch2-allow-all-btn');
+    if (acceptCookiesBtn) {
+      console.log('[Signature Auth] Accepting cookies splash...');
+      await acceptCookiesBtn.click({ force: true });
+      await page.waitForTimeout(1000);
     }
 
-    await userInput.fill(username);
-    await passInput.fill(password);
-
-    if (submitBtn) {
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 }),
-        submitBtn.click()
-      ]);
-    } else {
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 }),
-        passInput.press('Enter')
-      ]);
+    const memberLoginBtn = await page.$('button.member_login, .mobile-member-login');
+    if (memberLoginBtn && await memberLoginBtn.isVisible()) {
+      console.log('[Signature Auth] Clicking Member Login button...');
+      await memberLoginBtn.click({ force: true });
+      await page.waitForTimeout(1000);
     }
 
-    console.log('[Signature Auth] Auto-login submitted. Saving session state...');
+    const userInputs = await page.$$('input[name="user_name"]');
+    const passInputs = await page.$$('input[name="password"]');
+
+    let filled = false;
+    for (let i = 0; i < userInputs.length; i++) {
+      if (await userInputs[i].isVisible()) {
+        console.log(`[Signature Auth] Filling login form fields (input ${i})...`);
+        await userInputs[i].fill(username);
+        await passInputs[i].fill(password);
+        filled = true;
+        
+        console.log('[Signature Auth] Submitting login form...');
+        await passInputs[i].press('Enter');
+        
+        console.log('[Signature Auth] Waiting for dashboard redirect...');
+        await page.waitForURL('**/SigNet/index.cfm**', { timeout: 30000 });
+        break;
+      }
+    }
+
+    if (!filled) {
+      throw new Error('No visible login fields found.');
+    }
+
+    console.log('[Signature Auth] Login successful. Saving session state...');
     const authDir = path.dirname(authStatePath);
     if (!fs.existsSync(authDir)) {
       fs.mkdirSync(authDir, { recursive: true });
     }
     await context.storageState({ path: authStatePath });
-    console.log(`[Signature Auth] Authentication state saved to ${authStatePath}`);
+    console.log(`[Signature Auth] Authentication state saved successfully to ${authStatePath}`);
 
   } catch (err) {
-    console.warn('[Signature Auth] Auto-login failed:', err.message);
+    console.warn('[Signature Auth] Automated login failed:', err.message);
     await browser.close();
     await runManualLoginFallback();
     return;
@@ -154,10 +166,14 @@ async function scrapeSignature() {
       timeout: 45000
     });
 
-    // Check if we need to refresh the session
+    // Check if we need to refresh the session (invalid title, login redirect, or missing search results table)
     const pageTitle = await page.title();
     const currentUrl = page.url();
-    const isError = pageTitle.toLowerCase().includes('error') || currentUrl.includes('login');
+    const hasTable = await page.$('div#cruise_search_results_div > table');
+    const isError = pageTitle.toLowerCase().includes('error') || 
+                    currentUrl.includes('login') || 
+                    currentUrl.includes('type=consumer') ||
+                    !hasTable;
 
     if (isError) {
       console.log('[Signature Scraper] Session expired or invalid.');
@@ -189,52 +205,44 @@ async function scrapeSignature() {
     }
 
     const normalizedDeals = [];
-    let currentPage = 1;
-    const maxPages = parseInt(process.env.SIGNATURE_MAX_PAGES) || 15; // Controlled via .env configuration
 
-    while (currentPage <= maxPages) {
-      console.log(`[Signature Scraper] Scraping page ${currentPage}...`);
-      
-      // Wait for table of results to render
+    // Helper function to scrape a specific page structure
+    async function scrapeUrlPage(targetUrl, sourceSpaceType) {
+      console.log(`[Signature Scraper] Navigating to page: ${targetUrl}`);
       try {
+        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
         await page.waitForSelector('table', { timeout: 15000 });
       } catch (err) {
-        console.warn(`[Signature Scraper] No table found on page ${currentPage}. Current URL: ${page.url()}`);
-        
-        const screenshotPath = path.join(__dirname, '..', 'inspect_signature_error.png');
-        await page.screenshot({ path: screenshotPath });
-        console.log(`[Signature Scraper] Saved inspection screenshot to ${screenshotPath}`);
-        
-        const htmlPath = path.join(__dirname, '..', 'inspect_signature_error.html');
-        fs.writeFileSync(htmlPath, await page.content(), 'utf8');
-        console.log(`[Signature Scraper] Saved HTML source to ${htmlPath}`);
-        
-        throw err;
+        console.warn(`[Signature Scraper] Table not found on ${targetUrl}: ${err.message}`);
+        return 0;
       }
 
-      // Parse the table cells dynamically
       const pageDeals = await page.evaluate(() => {
-        const rows = Array.from(document.querySelectorAll('table tr'));
+        let table = document.querySelector('div#cruise_search_results_div > table');
+        if (!table) {
+          const tables = Array.from(document.querySelectorAll('table'));
+          table = tables.find(t => t.innerText.includes('Date') && t.innerText.includes('Nights') && t.innerText.includes('Price'));
+        }
+        if (!table) return [];
+        const rows = Array.from(table.querySelectorAll(':scope > tbody > tr, :scope > tr'));
         
-        // 1. Find header row to map indexes dynamically
         const headerRow = rows.find(r => r.innerText.includes('Date') && r.innerText.includes('Nights') && r.innerText.includes('Price'));
         if (!headerRow) return [];
 
-        const headers = Array.from(headerRow.querySelectorAll('th, td')).map(h => h.innerText.trim());
+        const headers = Array.from(headerRow.querySelectorAll(':scope > th, :scope > td')).map(h => h.innerText.trim());
         const dateIdx = headers.findIndex(h => h.includes('Date'));
         const shipIdx = headers.findIndex(h => h.includes('Ship') || h.includes('Cruise Line'));
         const nightsIdx = headers.findIndex(h => h.includes('Nights'));
         const priceIdx = headers.findIndex(h => h.includes('Price'));
         const itineraryIdx = headers.findIndex(h => h.includes('Title') || h.includes('Theme'));
+        const offerIdIdx = headers.findIndex(h => h.includes('Offer'));
 
         const results = [];
-        
         for (const row of rows) {
-          const cells = Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim());
+          const cells = Array.from(row.querySelectorAll(':scope > td')).map(c => c.innerText.trim());
           if (cells.length < Math.max(dateIdx, shipIdx, nightsIdx, priceIdx)) continue;
           
           const dateText = cells[dateIdx] || '';
-          // Match MM/DD/YY or MM/DD/YYYY
           if (!/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(dateText)) continue;
           
           results.push({
@@ -242,14 +250,15 @@ async function scrapeSignature() {
             shipText: cells[shipIdx] || '',
             nights: cells[nightsIdx] || '7',
             itinerary: cells[itineraryIdx] || 'Signature Group Deal',
-            priceStr: cells[priceIdx] || ''
+            priceStr: cells[priceIdx] || '',
+            offerId: offerIdIdx !== -1 ? cells[offerIdIdx] || '' : ''
           });
         }
         return results;
       });
 
-      console.log(`[Signature Scraper] Extracted ${pageDeals.length} raw rows on page ${currentPage}.`);
-      
+      console.log(`[Signature Scraper] Extracted ${pageDeals.length} raw rows.`);
+
       for (const d of pageDeals) {
         const price = parseInt(d.priceStr.replace(/[^0-9]/g, '')) || 0;
         if (price > 0) {
@@ -283,10 +292,21 @@ async function scrapeSignature() {
           if (brand === 'Cunard') brand = 'Cunard Line';
           if (brand === 'Ponant Explorations') brand = 'Ponant';
 
-          const itinerary = d.itinerary.split('\n')[0].trim();
+          // Extract detailed sub-fields from the multi-line itinerary cell
+          const lines = d.itinerary.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+          const itinerary = lines[0] || 'Signature Group Deal';
+          const ports = lines[1] || '';
+          
+          // Match promotion lines
+          const promotion_type = lines.find(l => l.includes('Signature Collection') || l.includes('Hosted') || l.includes('Amenities')) || lines[2] || '';
+          const incentive = lines.find(l => l.toLowerCase().includes('commission')) || '';
+          const theme = lines.find(l => l.toLowerCase().includes('theme cruise')) || '';
+
+          const cleanOfferId = d.offerId.replace(/[^0-9]/g, '');
+          const suffix = cleanOfferId ? `_${cleanOfferId}` : '';
 
           normalizedDeals.push({
-            sailing_id: `signature_${brand.toLowerCase().replace(/[^a-z]/g, '')}_${ship.toLowerCase().replace(/[^a-z]/g, '')}_${cleanDate.replace(/[^0-9]/g, '')}`,
+            sailing_id: `signature_${brand.toLowerCase().replace(/[^a-z]/g, '')}_${ship.toLowerCase().replace(/[^a-z]/g, '')}_${cleanDate.replace(/[^0-9]/g, '')}${suffix}`,
             brand: brand,
             ship: ship,
             sail_date: cleanDate,
@@ -296,23 +316,35 @@ async function scrapeSignature() {
             category: 'Group Block Stateroom',
             rate_type: 'signature_group',
             base_rate: price,
-            taxes_fees: 0
+            taxes_fees: 0,
+            ports: ports,
+            promotion_type: promotion_type,
+            incentive: incentive,
+            theme: theme,
+            space_type: sourceSpaceType
           });
         }
       }
-
-      // Check and navigate to next page
-      currentPage++;
-      if (currentPage <= maxPages) {
-        const nextUrl = `${startUrl}&page=${currentPage}`;
-        await page.goto(nextUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      } else {
-        break;
-      }
+      return pageDeals.length;
     }
 
+    // 1. Scrape Signature Collection deals (main search results)
+    let currentPage = 1;
+    const maxPages = parseInt(process.env.SIGNATURE_MAX_PAGES) || 15;
+    while (currentPage <= maxPages) {
+      console.log(`[Signature Scraper] Scraping Signature page ${currentPage} of ${maxPages}...`);
+      const nextUrl = `${startUrl}&page=${currentPage}`;
+      await scrapeUrlPage(nextUrl, 'Signature');
+      currentPage++;
+    }
+
+    // 2. Scrape Agency Offers (TPI block space)
+    console.log('[Signature Scraper] Checking for TPI Agency Block Space...');
+    const tpiUrl = 'https://www.signaturetravelnetwork.com/supplier/cruise_quick_search_result.cfm?bAgencyOnly=1&utp=AGENT&agency_id=3462&type=intranet&userid=71094&user_id=71094';
+    await scrapeUrlPage(tpiUrl, 'TPI');
+
     await browser.close();
-    console.log(`[Signature Scraper] Total signature deals scraped: ${normalizedDeals.length}`);
+    console.log(`[Signature Scraper] Total signature + TPI deals scraped: ${normalizedDeals.length}`);
     return normalizedDeals;
 
   } catch (err) {

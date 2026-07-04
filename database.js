@@ -27,6 +27,21 @@ function initDatabase() {
         )
       `, (err) => {
         if (err) return reject(err);
+        
+        // Safe migrations to add new columns to sailings table if they don't exist
+        const newCols = {
+          ports: 'TEXT',
+          promotion_type: 'TEXT',
+          incentive: 'TEXT',
+          theme: 'TEXT',
+          space_type: 'TEXT',
+          released_date: 'DATE'
+        };
+        for (const [col, type] of Object.entries(newCols)) {
+          db.run(`ALTER TABLE sailings ADD COLUMN ${col} ${type}`, (alterErr) => {
+            // Ignore error if column already exists
+          });
+        }
       });
 
       // 2. Create pricing_history table
