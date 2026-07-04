@@ -97,6 +97,7 @@ function generateHtml(sailings, history, hasLogo) {
           incentive: s.incentive || '',
           theme: s.theme || '',
           space_type: s.space_type || 'Signature',
+          released_date: s.released_date || '',
           history: logs.map(l => ({ price: l.base_rate, date: l.last_checked }))
         });
       }
@@ -139,6 +140,7 @@ function generateHtml(sailings, history, hasLogo) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <style>
     :root {
@@ -679,6 +681,68 @@ function generateHtml(sailings, history, hasLogo) {
       color: var(--cocoa-gray);
       font-size: 1rem;
     }
+
+    .sailing-row {
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .sailing-row:hover td {
+      background: rgba(27, 188, 155, 0.05) !important;
+    }
+    .detail-drawer-row td {
+      padding: 0;
+      background: #faf8f5;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .drawer-content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      padding: 1.5rem 2.5rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .drawer-chart-container {
+      flex: 2;
+      min-width: 320px;
+      max-width: 650px;
+      height: 220px;
+    }
+    .drawer-info-container {
+      flex: 1;
+      min-width: 250px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 10px rgba(61, 31, 12, 0.01);
+    }
+    .quote-btn {
+      background: var(--accent-mint);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem 1.2rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .quote-btn:hover {
+      background: var(--accent-mint-hover);
+      box-shadow: 0 4px 12px rgba(27, 188, 155, 0.2);
+    }
+    .quote-btn.success {
+      background: #00c853;
+      box-shadow: 0 4px 12px rgba(0, 200, 83, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -761,6 +825,7 @@ function generateHtml(sailings, history, hasLogo) {
           <thead>
             <tr>
               <th onclick="toggleSort('brand')" id="th-brand">Brand</th>
+              <th onclick="toggleSort('released_date')" id="th-released_date">Released</th>
               <th onclick="toggleSort('sail_date')" id="th-sail_date" class="active-sort">Sail Date</th>
               <th onclick="toggleSort('nights')" id="th-nights">Nights</th>
               <th onclick="toggleSort('ship')" id="th-ship">Ship</th>
@@ -997,8 +1062,12 @@ function generateHtml(sailings, history, hasLogo) {
       }
       document.getElementById('no-results-view').style.display = 'none';
 
-      filtered.forEach(s => {
+      filtered.forEach((s, idx) => {
         const tr = document.createElement('tr');
+        tr.className = 'sailing-row';
+        const drawerId = \`drawer-\${idx}\`;
+        
+        tr.onclick = () => toggleDetailsRow(drawerId, s.history);
         
         let rateClassBadge = 'badge-retail';
         let rateClassLabel = 'Retail Fares';
@@ -1031,8 +1100,11 @@ function generateHtml(sailings, history, hasLogo) {
           promosMarkup = '<span style="color:var(--cocoa-gray);font-style:italic;">Standard inclusions</span>';
         }
 
+        const releasedMarkup = s.released_date ? formatDate(s.released_date) : '<span style="color:var(--cocoa-gray);font-style:italic;">New</span>';
+
         tr.innerHTML = \`
           <td><strong>\${s.brand}</strong></td>
+          <td>\${releasedMarkup}</td>
           <td>\${formatDate(s.sail_date)}</td>
           <td>\${s.nights} Nights</td>
           <td>\${s.ship}</td>
@@ -1057,6 +1129,156 @@ function generateHtml(sailings, history, hasLogo) {
           <td>\${dropMarkup}</td>
         \`;
         tbody.appendChild(tr);
+
+        // Append hidden expandable drawer row
+        const drawerTr = document.createElement('tr');
+        drawerTr.id = drawerId;
+        drawerTr.className = 'detail-drawer-row';
+        drawerTr.style.display = 'none';
+
+        const safeBrand = s.brand.replace(/'/g, "\\'");
+        const safeShip = s.ship.replace(/'/g, "\\'");
+        const safeItinerary = s.itinerary.replace(/'/g, "\\'");
+        const safePromo = s.promotion_type.replace(/'/g, "\\'");
+        const safeIncentive = s.incentive.replace(/'/g, "\\'");
+
+        drawerTr.innerHTML = \`
+          <td colspan="11">
+            <div class="drawer-content">
+              <div class="drawer-chart-container">
+                <canvas id="canvas-\${drawerId}"></canvas>
+              </div>
+              <div class="drawer-info-container">
+                <h4 style="font-family:'Playfair Display', serif;font-weight:700;font-size:1.1rem;color:var(--espresso);">Client Quoting Action</h4>
+                <p style="font-size:0.75rem;color:var(--cocoa-gray);">Generate a pre-formatted pricing quote to copy directly to your clipboard.</p>
+                <button class="quote-btn" onclick="copyQuoteToClipboard(event, '\${safeBrand}', '\${safeShip}', '\${s.sail_date}', '\${safeItinerary}', '\${s.category}', \${s.price}, \${s.price_drop}, '\${safePromo}', '\${safeIncentive}')">
+                  📋 Copy Quote
+                </button>
+              </div>
+            </div>
+          </td>
+        \`;
+        tbody.appendChild(drawerTr);
+      });
+    }
+
+    const activeCharts = {};
+
+    function toggleDetailsRow(drawerId, historyLogs) {
+      const row = document.getElementById(drawerId);
+      if (!row) return;
+
+      const isHidden = row.style.display === 'none';
+
+      // Collapse other drawers first for clean single-view
+      document.querySelectorAll('.detail-drawer-row').forEach(r => {
+        r.style.display = 'none';
+      });
+
+      if (isHidden) {
+        row.style.display = 'table-row';
+        const canvasId = 'canvas-' + drawerId;
+        if (!activeCharts[canvasId]) {
+          setTimeout(() => {
+            initChart(canvasId, historyLogs);
+            activeCharts[canvasId] = true;
+          }, 50);
+        }
+      } else {
+        row.style.display = 'none';
+      }
+    }
+
+    function initChart(canvasId, historyLogs) {
+      const canvasEl = document.getElementById(canvasId);
+      if (!canvasEl) return;
+      const ctx = canvasEl.getContext('2d');
+      
+      const sortedLogs = [...historyLogs].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const labels = sortedLogs.map(l => formatDate(l.date));
+      const prices = sortedLogs.map(l => l.price);
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Rate (USD)',
+            data: prices,
+            borderColor: '#1bbc9b',
+            backgroundColor: 'rgba(27, 188, 155, 0.04)',
+            borderWidth: 2.5,
+            tension: 0.25,
+            fill: true,
+            pointBackgroundColor: '#1bbc9b',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 1.5,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 9, family: 'Montserrat' } }
+            },
+            y: {
+              ticks: { 
+                font: { size: 9, family: 'Montserrat' },
+                callback: value => '$' + value 
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function escapeHtmlText(text) {
+      return text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    }
+
+    function copyQuoteToClipboard(event, brand, ship, sailDate, itinerary, category, price, priceDrop, promo, commission) {
+      event.stopPropagation();
+      
+      const cleanBrand = escapeHtmlText(brand);
+      const cleanShip = escapeHtmlText(ship);
+      const cleanItinerary = escapeHtmlText(itinerary);
+      const cleanPromo = escapeHtmlText(promo);
+      
+      let quoteText = \`🚢 PREMIUM CRUISE QUOTE - WANDERING BEAR TRAVEL AGENCY\\n\`;
+      quoteText += \`==================================================\\n\`;
+      quoteText += \`Cruise Line: \${cleanBrand}\\n\`;
+      quoteText += \`Ship Name  : \${cleanShip}\\n\`;
+      quoteText += \`Sail Date  : \${formatDate(sailDate)}\\n\`;
+      quoteText += \`Itinerary  : \${cleanItinerary}\\n\`;
+      quoteText += \`Cabin Cat  : \${category}\\n\`;
+      quoteText += \`--------------------------------------------------\\n\`;
+      quoteText += \`Exclusive Rate: \$\${price} per person (base cruise fare)\\n\`;
+      if (priceDrop > 0) {
+        quoteText += \`Rate Savings  : \$\${priceDrop} price drop detected from initial listing!\\n\`;
+      }
+      if (cleanPromo) {
+        quoteText += \`Inclusions    : \${cleanPromo}\\n\`;
+      }
+      quoteText += \`==================================================\\n\`;
+      quoteText += \`Let me know if you would like to hold space for this voyage!\\n\`;
+      quoteText += \`🌐 View the latest live rates: https://gregoriobueno-coder.github.io/retail-scout/\\n\`;
+
+      navigator.clipboard.writeText(quoteText).then(() => {
+        const btn = event.currentTarget;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✅ Quote Copied!';
+        btn.classList.add('success');
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.classList.remove('success');
+        }, 2000);
       });
     }
 

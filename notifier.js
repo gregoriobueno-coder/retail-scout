@@ -35,11 +35,21 @@ async function sendNotification(message, title = 'Retail Scout Alert') {
     
     if (token && chatId) {
       const url = `https://api.telegram.org/bot${token}/sendMessage`;
+      
+      // Convert basic markdown formatting to safe Telegram HTML tags
+      const safeHtml = `<b>${title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</b>\n` + 
+        message
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\*([^*]+)\*/g, '<b>$1</b>')
+          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
       promises.push(
         axios.post(url, {
           chat_id: chatId,
-          text: `*${title}*\n${message}`,
-          parse_mode: 'Markdown'
+          text: safeHtml,
+          parse_mode: 'HTML'
         })
         .then(() => console.log('Telegram notification sent.'))
         .catch(err => console.error('Telegram notification failed:', err.message))

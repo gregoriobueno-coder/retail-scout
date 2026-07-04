@@ -144,8 +144,26 @@ async function scrapeSignature() {
   
   let browser;
   try {
+    let needsLogin = false;
     if (!fs.existsSync(authStatePath)) {
-      throw new Error('No saved authentication state found. Login required.');
+      needsLogin = true;
+    } else {
+      const stats = fs.statSync(authStatePath);
+      const ageMs = Date.now() - stats.mtime.getTime();
+      const fifteenMinutes = 15 * 60 * 1000;
+      if (ageMs > fifteenMinutes) {
+        console.log(`[Signature Scraper] Saved authentication state is older than 15 minutes (${Math.round(ageMs / 1000 / 60)}m old). Proactively refreshing...`);
+        needsLogin = true;
+      }
+    }
+
+    if (needsLogin) {
+      if (process.env.SIGNATURE_USERNAME && process.env.SIGNATURE_PASSWORD) {
+        console.log('[Signature Scraper] Running proactive auto-login refresh...');
+        await loginSignature();
+      } else {
+        throw new Error('No saved authentication state found and no credentials configured. Login required.');
+      }
     }
 
     const headless = process.env.SIGNATURE_HEADLESS === 'true';
