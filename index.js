@@ -198,8 +198,12 @@ async function runOrchestrator() {
         if (err) console.error('Error closing database:', err.message);
         else console.log('Database connection closed.');
 
-        // Push updates to GitHub
-        pushToGit();
+        // Push updates to GitHub (skip when running on GitHub Actions to let workflow handle it)
+        if (process.env.GITHUB_ACTIONS !== 'true') {
+          pushToGit();
+        } else {
+          console.log('[Git Sync] Running on GitHub Actions. Skipping internal git push.');
+        }
         console.log('==================================================');
       });
       return;

@@ -1,0 +1,55 @@
+name: Retail Scout Price Sync
+
+on:
+  schedule:
+    - cron: '0 12 * * *' # Every day at 12:00 UTC (7:00 AM EST)
+  workflow_dispatch: # Allow manual trigger from GitHub web UI
+
+permissions:
+  contents: write # Allows the runner to commit and push database/HTML updates back to main
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install System Dependencies for Playwright
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgbm-dev libnss3 libatk-bridge2.0-0 libgtk-3-0 libasound2
+
+      - name: Install Node Dependencies
+        run: npm install
+
+      - name: Install Playwright Browsers
+        run: npx playwright install chromium
+
+      - name: Run Scraper Sync
+        env:
+          SIGNATURE_USERNAME: ${{ secrets.SIGNATURE_USERNAME }}
+          SIGNATURE_PASSWORD: ${{ secrets.SIGNATURE_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ENABLE_TELEGRAM: true
+          ENABLE_DESKTOP: false
+          ENABLE_EMAIL: false
+          ENABLE_PUSHOVER: false
+        run: node index.js
+
+      - name: Commit and Push Compiled Updates
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html retail_scout.db auth/signature-state.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Automated Sync: Update retail pricing database & dashboard" && git push origin main)

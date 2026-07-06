@@ -61,14 +61,18 @@ async function loginSignature() {
   const password = process.env.SIGNATURE_PASSWORD;
 
   if (!username || !password) {
+    if (process.env.GITHUB_ACTIONS === 'true') {
+      throw new Error('[Signature Auth] Credentials not configured in GitHub Secrets. Aborting.');
+    }
     console.log('[Signature Auth] Credentials not found in .env. Falling back to manual browser login...');
     await runManualLoginFallback();
     return;
   }
 
-  console.log('[Signature Auth] Attempting automated credential-based login (headed)...');
+  const isGitHubAction = process.env.GITHUB_ACTIONS === 'true';
+  console.log(`[Signature Auth] Attempting automated credential-based login (${isGitHubAction ? 'headless' : 'headed'})...`);
   const browser = await chromium.launch({
-    headless: false,
+    headless: isGitHubAction,
     args: ['--disable-blink-features=AutomationControlled']
   });
   const context = await browser.newContext({
@@ -166,7 +170,7 @@ async function scrapeSignature() {
       }
     }
 
-    const headless = process.env.SIGNATURE_HEADLESS === 'true';
+    const headless = process.env.SIGNATURE_HEADLESS === 'true' || process.env.GITHUB_ACTIONS === 'true';
     browser = await chromium.launch({
       headless: headless,
       args: ['--disable-blink-features=AutomationControlled']
