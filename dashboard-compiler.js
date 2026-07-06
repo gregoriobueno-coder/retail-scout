@@ -743,6 +743,130 @@ function generateHtml(sailings, history, hasLogo) {
       background: #00c853;
       box-shadow: 0 4px 12px rgba(0, 200, 83, 0.2);
     }
+
+    /* View Mode Selector switch */
+    .view-mode-selector {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      background: #faf8f5;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 0.4rem 1.2rem;
+      gap: 0.8rem;
+    }
+    .toggle-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--cocoa-gray);
+      transition: var(--transition);
+    }
+    .toggle-label.active {
+      color: var(--espresso);
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider-toggle {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--card-border);
+      transition: .4s;
+    }
+    .slider-toggle:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+    }
+    input:checked + .slider-toggle {
+      background-color: var(--accent-mint);
+    }
+    input:checked + .slider-toggle:before {
+      transform: translateX(20px);
+    }
+    .slider-toggle.round {
+      border-radius: 34px;
+    }
+    .slider-toggle.round:before {
+      border-radius: 50%;
+    }
+    
+    .markup-container {
+      flex: 1;
+      min-width: 150px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    /* Progress Overlay Styles */
+    #progress-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(61, 31, 12, 0.5);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+    .progress-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 520px;
+      box-shadow: 0 12px 40px rgba(61, 31, 12, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .progress-bar-container {
+      background: #e6dfcf;
+      border-radius: 10px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      background: var(--accent-mint);
+      width: 0%;
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+    .progress-logs {
+      background: #faf8f5;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 0.8rem;
+      height: 160px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.72rem;
+      color: var(--espresso-light);
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -768,14 +892,29 @@ function generateHtml(sailings, history, hasLogo) {
           <p>Retail Fares & pre-booked Group Space pricing Analyzer</p>
         </div>
       </div>
-      <div class="stats-badge" id="last-updated">Real-time Rates</div>
+      <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+        <div class="view-mode-selector">
+          <div class="toggle-container">
+            <span class="toggle-label active" id="label-advisor">Advisor View</span>
+            <label class="switch">
+              <input type="checkbox" id="view-mode-toggle" onchange="toggleViewMode()">
+              <span class="slider-toggle round"></span>
+            </label>
+            <span class="toggle-label" id="label-client">Client View</span>
+          </div>
+        </div>
+        <button class="stats-badge" id="last-updated" onclick="triggerScraperRun()" style="cursor:pointer;border:none;outline:none;display:inline-flex;align-items:center;gap:0.4rem;transition:var(--transition);font-family:inherit;">🔄 Real-time Rates</button>
+      </div>
     </header>
 
     <div class="filter-panel">
-      <div class="filter-row-top">
-        <div class="search-wrapper">
+      <div class="filter-row-top" style="gap:1rem;align-items:center;">
+        <div class="search-wrapper" style="flex:2;">
           <input type="text" id="search-bar" class="search-input" placeholder="Search by Ship, Itinerary, Route, or Cabin Category..." oninput="filterAndRender()">
         </div>
+        <button class="quote-btn" style="background:var(--cocoa-gray);white-space:nowrap;height:44px;gap:0.4rem;border-radius:8px;font-size:0.82rem;" onclick="exportToCSV()">
+          📥 Export CSV
+        </button>
         
         <div class="filter-tabs-wrapper">
           <span class="filter-tabs-label">Filter by Brand</span>
@@ -815,6 +954,13 @@ function generateHtml(sailings, history, hasLogo) {
             <span id="price-slider-val">$10000</span>
           </div>
           <input type="range" id="price-slider" class="slider-control" min="0" max="10000" step="100" value="10000" oninput="updateSliders()">
+        </div>
+        <div class="slider-container" id="markup-control-wrapper" style="display:none;">
+          <div class="slider-label-row">
+            <span>Client Markup (Add %)</span>
+            <span id="markup-slider-val">0%</span>
+          </div>
+          <input type="range" id="markup-slider" class="slider-control" min="0" max="25" step="1" value="0" oninput="updateMarkup()">
         </div>
       </div>
     </div>
@@ -860,6 +1006,207 @@ function generateHtml(sailings, history, hasLogo) {
     let allSailings = [];
     let currentBrand = 'all';
     let currentSort = { column: 'sail_date', direction: 'asc' };
+    let viewMode = 'advisor';
+    let clientMarkupPercent = 0;
+
+    function toggleViewMode() {
+      const isChecked = document.getElementById('view-mode-toggle').checked;
+      viewMode = isChecked ? 'client' : 'advisor';
+      
+      document.getElementById('label-advisor').classList.toggle('active', !isChecked);
+      document.getElementById('label-client').classList.toggle('active', isChecked);
+      
+      document.getElementById('markup-control-wrapper').style.display = isChecked ? 'block' : 'none';
+      
+      filterAndRender();
+    }
+
+    function updateMarkup() {
+      const val = parseInt(document.getElementById('markup-slider').value) || 0;
+      clientMarkupPercent = val;
+      document.getElementById('markup-slider-val').innerText = val + '%';
+      filterAndRender();
+    }
+
+    async function triggerScraperRun() {
+      const btn = document.getElementById('last-updated');
+      if (btn.disabled) return;
+
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      btn.innerHTML = '⚙️ Executing...';
+
+      let overlay = document.getElementById('progress-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'progress-overlay';
+        overlay.innerHTML = \`
+          <div class="progress-card">
+            <h3 style="font-family:'Playfair Display', serif;font-weight:700;font-size:1.2rem;color:var(--espresso);margin-bottom:0.2rem;">Live Scraper Progress</h3>
+            <p id="progress-status" style="font-size:0.78rem;color:var(--cocoa-gray);margin-bottom:0.8rem;">Connecting to local backend server...</p>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-logs" id="progress-logs"></div>
+          </div>
+        \`;
+        document.body.appendChild(overlay);
+      } else {
+        overlay.style.display = 'flex';
+      }
+
+      const logContainer = document.getElementById('progress-logs');
+      const fill = document.getElementById('progress-fill');
+      const statusText = document.getElementById('progress-status');
+
+      logContainer.innerHTML = '';
+      fill.style.width = '3%';
+
+      try {
+        const source = new EventSource('/api/run-scraper');
+        
+        source.addEventListener('status', (e) => {
+          const data = JSON.parse(e.data);
+          statusText.innerText = data.message;
+          if (data.done) {
+            fill.style.width = '100%';
+            source.close();
+            
+            if (data.failed) {
+              fill.style.backgroundColor = 'var(--terracotta)';
+              addCloseButton(overlay, btn);
+            } else {
+              statusText.innerText = 'Sync succeeded! Reloading dashboard...';
+              setTimeout(() => window.location.reload(), 2000);
+            }
+          }
+        });
+
+        source.addEventListener('log', (e) => {
+          const data = JSON.parse(e.data);
+          appendLog(logContainer, data.message, false);
+          
+          if (data.message.includes('Scraping Signature page')) {
+            const match = data.message.match(/page (\\d+) of (\\d+)/);
+            if (match) {
+              const current = parseInt(match[1]);
+              const total = parseInt(match[2]);
+              const pct = Math.round((current / (total + 2)) * 100);
+              fill.style.width = pct + '%';
+            }
+          } else if (data.message.includes('Checking for TPI')) {
+            fill.style.width = '90%';
+          } else if (data.message.includes('Processing total of')) {
+            fill.style.width = '95%';
+          }
+        });
+
+        source.addEventListener('error', (e) => {
+          let msg = 'EventSource stream disconnected';
+          try {
+            const data = JSON.parse(e.data);
+            msg = data.message;
+          } catch(err) {}
+          
+          appendLog(logContainer, msg, true);
+        });
+
+        source.onerror = (e) => {
+          source.close();
+          statusText.innerText = 'Connection lost. Scraper finished or server stopped.';
+          addCloseButton(overlay, btn);
+        };
+
+      } catch (err) {
+        console.error(err);
+        statusText.innerText = 'Error: Local server (node server.js) is not running.';
+        fill.style.backgroundColor = 'var(--terracotta)';
+        addCloseButton(overlay, btn);
+      }
+    }
+
+    function appendLog(container, message, isError) {
+      const line = document.createElement('div');
+      line.innerText = message;
+      if (isError) {
+        line.style.color = 'var(--terracotta)';
+        line.style.fontWeight = '700';
+      }
+      container.appendChild(line);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function addCloseButton(overlay, triggerBtn) {
+      const logContainer = document.getElementById('progress-logs');
+      if (document.getElementById('progress-close-btn')) return;
+
+      const btn = document.createElement('button');
+      btn.id = 'progress-close-btn';
+      btn.className = 'quote-btn';
+      btn.style.marginTop = '1rem';
+      btn.style.alignSelf = 'center';
+      btn.innerText = 'Close Console';
+      btn.onclick = () => {
+        overlay.style.display = 'none';
+        triggerBtn.disabled = false;
+        triggerBtn.style.opacity = '1';
+        triggerBtn.innerHTML = '🔄 Real-time Rates';
+      };
+      logContainer.appendChild(btn);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function exportToCSV() {
+      const deals = window.CURRENT_FILTERED_DEALS || [];
+      if (!deals.length) {
+        alert('No data to export!');
+        return;
+      }
+
+      const headers = ['Brand', 'Released Date', 'Sail Date', 'Nights', 'Ship', 'Itinerary', 'Ports', 'Cabin Category', 'Rate Class', 'Original Price', 'Current Price', 'Price Drop', 'Promotions'];
+      const csvRows = [headers.join(',')];
+      
+      for (const d of deals) {
+        const markupCoeff = 1 + (clientMarkupPercent / 100);
+        const originalPrice = Math.round(d.max_price * markupCoeff);
+        const currentPrice = Math.round(d.price * markupCoeff);
+        const priceDrop = originalPrice - currentPrice;
+        
+        let rateClassLabel = 'Retail Fares';
+        if (d.space_type === 'TPI') rateClassLabel = 'TPI Block';
+        else if (d.rate_type === 'signature_group') rateClassLabel = 'Signature Group';
+
+        const clean = val => \`"\${(val || '').toString().replace(/"/g, '""')}"\`;
+        
+        const row = [
+          clean(d.brand),
+          clean(d.released_date || 'New'),
+          clean(d.sail_date),
+          clean(d.nights + ' Nights'),
+          clean(d.ship),
+          clean(d.itinerary),
+          clean(d.ports),
+          clean(d.category),
+          clean(viewMode === 'client' ? 'Special Rate' : rateClassLabel),
+          originalPrice,
+          currentPrice,
+          priceDrop,
+          clean(viewMode === 'client' ? d.promotion_type : \`\${d.promotion_type} \${d.incentive ? 'Incentive: ' + d.incentive : ''}\`)
+        ];
+        csvRows.push(row.join(','));
+      }
+
+      const csvString = csvRows.join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", \`wandering_bear_scout_export_\${new Date().toISOString().split('T')[0]}.csv\`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
 
     function base64ToArrayBuffer(base64) {
       const binaryString = window.atob(base64);
@@ -1005,7 +1352,6 @@ function generateHtml(sailings, history, hasLogo) {
 
       document.querySelectorAll('th').forEach(th => th.classList.remove('active-sort'));
       const activeTh = document.getElementById('th-' + column);
-      if (activeTh) activeTh.classList.add('active-sort');
       filterAndRender();
     }
 
@@ -1053,6 +1399,15 @@ function generateHtml(sailings, history, hasLogo) {
         }
       });
 
+      // Cache the currently filtered list for export
+      window.CURRENT_FILTERED_DEALS = filtered;
+
+      // Update table header labels based on view mode
+      const rateHeader = document.getElementById('th-space_type');
+      if (rateHeader) {
+        rateHeader.innerText = viewMode === 'client' ? 'Rate Type' : 'Rate Class';
+      }
+
       const tbody = document.getElementById('table-body');
       tbody.innerHTML = '';
 
@@ -1069,19 +1424,32 @@ function generateHtml(sailings, history, hasLogo) {
         
         tr.onclick = () => toggleDetailsRow(drawerId, s.history);
         
+        // Calculate prices with client markups
+        const markupCoeff = 1 + (clientMarkupPercent / 100);
+        const displayPrice = Math.round(s.price * markupCoeff);
+        const displayMaxPrice = Math.round(s.max_price * markupCoeff);
+        const displayPriceDrop = displayMaxPrice - displayPrice;
+        const displayPercentDrop = displayMaxPrice > 0 ? Math.round((displayPriceDrop / displayMaxPrice) * 100) : 0;
+
         let rateClassBadge = 'badge-retail';
         let rateClassLabel = 'Retail Fares';
-        if (s.space_type === 'TPI') {
-          rateClassBadge = 'badge-tpi';
-          rateClassLabel = 'TPI Block';
-        } else if (s.rate_type === 'signature_group') {
+        
+        if (viewMode === 'client') {
           rateClassBadge = 'badge-signature';
-          rateClassLabel = 'Signature Group';
+          rateClassLabel = 'Special Promo';
+        } else {
+          if (s.space_type === 'TPI') {
+            rateClassBadge = 'badge-tpi';
+            rateClassLabel = 'TPI Block';
+          } else if (s.rate_type === 'signature_group') {
+            rateClassBadge = 'badge-signature';
+            rateClassLabel = 'Signature Group';
+          }
         }
         
         let dropMarkup = '<em>No change</em>';
-        if (s.price_drop > 0) {
-          dropMarkup = \`<span class="discount-badge">↓ \$\${s.price_drop} (\$\${s.percent_drop}%)</span>\`;
+        if (displayPriceDrop > 0) {
+          dropMarkup = \`<span class="discount-badge">↓ \$\${displayPriceDrop} (\$\${displayPercentDrop}%)</span>\`;
         }
 
         // Build theme markup
@@ -1093,7 +1461,7 @@ function generateHtml(sailings, history, hasLogo) {
         if (s.promotion_type) {
           promosMarkup += \`<span class="promo-text">\${s.promotion_type}</span>\`;
         }
-        if (s.incentive) {
+        if (s.incentive && viewMode !== 'client') {
           promosMarkup += \`<span class="commission-badge">💰 \${s.incentive}</span>\`;
         }
         if (!promosMarkup) {
@@ -1123,8 +1491,8 @@ function generateHtml(sailings, history, hasLogo) {
             </div>
           </td>
           <td>
-            \${s.price_drop > 0 ? \`<span class="original-price">\$\${s.max_price}</span>\` : ''}
-            <span class="price-value">\$\${s.price}</span>
+            \${displayPriceDrop > 0 ? \`<span class="original-price">\$\${displayMaxPrice}</span>\` : ''}
+            <span class="price-value">\$\${displayPrice}</span>
           </td>
           <td>\${dropMarkup}</td>
         \`;
