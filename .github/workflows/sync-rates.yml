@@ -24,16 +24,11 @@ jobs:
           node-version: 18
           cache: 'npm'
 
-      - name: Install System Dependencies for Playwright
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgbm-dev libnss3 libatk-bridge2.0-0 libgtk-3-0 libasound2
-
       - name: Install Node Dependencies
         run: npm install
 
-      - name: Install Playwright Browsers
-        run: npx playwright install chromium
+      - name: Install Playwright & System Dependencies
+        run: npx playwright install --with-deps chromium
 
       - name: Run Scraper Sync
         env:
