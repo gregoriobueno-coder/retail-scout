@@ -3,6 +3,8 @@ name: Retail Scout Price Sync
 on:
   schedule:
     - cron: '0 12 * * *' # Every day at 12:00 UTC (7:00 AM EST)
+  push:
+    branches: [ main ]
   workflow_dispatch: # Allow manual trigger from GitHub web UI
 
 permissions:
