@@ -98,6 +98,7 @@ function generateHtml(sailings, history, hasLogo) {
           theme: s.theme || '',
           space_type: s.space_type || 'Signature',
           released_date: s.released_date || '',
+          ai_pitch: s.ai_pitch || '',
           history: logs.map(l => ({ price: l.base_rate, date: l.last_checked }))
         });
       }
@@ -948,6 +949,14 @@ function generateHtml(sailings, history, hasLogo) {
           </select>
         </div>
 
+        <div class="dropdown-container" style="justify-content:center;align-items:flex-start;">
+          <span class="dropdown-label">Block Space Release</span>
+          <label style="display:inline-flex;align-items:center;gap:0.5rem;font-size:0.8rem;cursor:pointer;color:var(--espresso);height:44px;font-weight:600;">
+            <input type="checkbox" id="wash-filter" onchange="filterAndRender()" style="width:18px;height:18px;accent-color:var(--accent-mint);cursor:pointer;">
+            Hide within 90 days (Auto-Wash)
+          </label>
+        </div>
+
         <div class="slider-container">
           <div class="slider-label-row">
             <span>Max Price limit</span>
@@ -1278,6 +1287,92 @@ function generateHtml(sailings, history, hasLogo) {
       }
     }
 
+    function updateURLQuery() {
+      const params = new URLSearchParams();
+      
+      const searchVal = document.getElementById('search-bar').value;
+      if (searchVal) params.set('q', searchVal);
+      
+      if (currentBrand !== 'all') params.set('brand', currentBrand);
+      
+      const regionVal = document.getElementById('region-filter').value;
+      if (regionVal !== 'all') params.set('region', regionVal);
+      
+      const rateTypeVal = document.getElementById('rate-type-filter').value;
+      if (rateTypeVal !== 'all') params.set('rate', rateTypeVal);
+      
+      const maxPrice = document.getElementById('price-slider').value;
+      params.set('price', maxPrice);
+      
+      const washChecked = document.getElementById('wash-filter').checked;
+      if (washChecked) params.set('wash', '1');
+      
+      const markupVal = document.getElementById('markup-slider').value;
+      if (parseInt(markupVal) > 0) params.set('markup', markupVal);
+      
+      if (viewMode !== 'advisor') params.set('view', viewMode);
+      
+      if (currentSort.column !== 'sail_date' || currentSort.direction !== 'asc') {
+        params.set('sort', currentSort.column);
+        params.set('dir', currentSort.direction);
+      }
+      
+      const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+      window.history.replaceState(null, '', newURL);
+    }
+
+    function loadStateFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      
+      const q = params.get('q');
+      if (q) document.getElementById('search-bar').value = q;
+      
+      const brand = params.get('brand');
+      if (brand) currentBrand = brand;
+      
+      const region = params.get('region');
+      if (region) document.getElementById('region-filter').value = region;
+      
+      const rate = params.get('rate');
+      if (rate) document.getElementById('rate-type-filter').value = rate;
+      
+      const price = params.get('price');
+      if (price) {
+        document.getElementById('price-slider').value = price;
+        document.getElementById('price-slider-val').innerText = '$' + price;
+      }
+      
+      const wash = params.get('wash');
+      if (wash === '1') document.getElementById('wash-filter').checked = true;
+      
+      const markup = params.get('markup');
+      if (markup) {
+        document.getElementById('markup-slider').value = markup;
+        document.getElementById('markup-slider-val').innerText = markup + '%';
+        clientMarkupPercent = parseInt(markup);
+      }
+      
+      const view = params.get('view');
+      if (view === 'client') {
+        viewMode = 'client';
+        document.getElementById('view-mode-toggle').checked = true;
+        document.getElementById('label-advisor').classList.remove('active');
+        document.getElementById('label-client').classList.add('active');
+        document.getElementById('markup-control-wrapper').style.display = 'block';
+      }
+      
+      const sort = params.get('sort');
+      const dir = params.get('dir');
+      if (sort) {
+        currentSort.column = sort;
+        currentSort.direction = dir || 'asc';
+        
+        document.querySelectorAll('th').forEach(th => th.classList.remove('active-sort'));
+        const activeTh = document.getElementById('th-' + sort);
+        if (activeTh) activeTh.classList.add('active-sort');
+      }
+    }
+
     function formatDate(dateStr) {
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) return dateStr;
@@ -1317,6 +1412,18 @@ function generateHtml(sailings, history, hasLogo) {
       slider.max = maxPrice;
       slider.value = maxPrice;
       document.getElementById('price-slider-val').innerText = '$' + maxPrice;
+
+      try {
+        loadStateFromURL();
+      } catch (err) {
+        console.warn('Failed to parse URL query filters:', err.message);
+      }
+
+      const tabs = document.querySelectorAll('.filter-tab');
+      tabs.forEach(t => {
+        const tText = t.innerText === 'All Brands' ? 'all' : t.innerText;
+        t.classList.toggle('active', tText === currentBrand);
+      });
 
       filterAndRender();
     }
@@ -1360,6 +1467,7 @@ function generateHtml(sailings, history, hasLogo) {
       const maxPrice = parseInt(document.getElementById('price-slider').value) || 99999;
       const regionVal = document.getElementById('region-filter').value;
       const rateTypeVal = document.getElementById('rate-type-filter').value;
+      const hideWithin90 = document.getElementById('wash-filter').checked;
 
       let filtered = allSailings.filter(s => {
         let brandMatch = false;
@@ -1376,13 +1484,23 @@ function generateHtml(sailings, history, hasLogo) {
 
         const priceMatch = s.price <= maxPrice;
 
+        let washMatch = true;
+        if (hideWithin90) {
+          const sailDateObj = new Date(s.sail_date);
+          const limitDate = new Date();
+          limitDate.setDate(limitDate.getDate() + 90);
+          if (sailDateObj < limitDate) {
+            washMatch = false;
+          }
+        }
+
         const textMatch = (s.ship || '').toLowerCase().includes(query) || 
                           (s.itinerary || '').toLowerCase().includes(query) || 
                           (s.category || '').toLowerCase().includes(query) ||
                           (s.ports || '').toLowerCase().includes(query) ||
                           (s.brand || '').toLowerCase().includes(query);
 
-        return brandMatch && regionMatch && rateTypeMatch && priceMatch && textMatch;
+        return brandMatch && regionMatch && rateTypeMatch && priceMatch && textMatch && washMatch;
       });
 
       filtered.sort((a, b) => {
@@ -1509,6 +1627,7 @@ function generateHtml(sailings, history, hasLogo) {
         const safeItinerary = s.itinerary.replace(/'/g, "\\'");
         const safePromo = s.promotion_type.replace(/'/g, "\\'");
         const safeIncentive = s.incentive.replace(/'/g, "\\'");
+        const safePitch = (s.ai_pitch || '').replace(/'/g, "\\'");
 
         drawerTr.innerHTML = \`
           <td colspan="11">
@@ -1517,9 +1636,15 @@ function generateHtml(sailings, history, hasLogo) {
                 <canvas id="canvas-\${drawerId}"></canvas>
               </div>
               <div class="drawer-info-container">
+                \${s.ai_pitch ? \\\`
+                <div class="ai-pitch-card" style="margin-bottom:1.2rem;background:#f4fbf8;border:1px solid #d3f2e5;border-radius:12px;padding:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.02);text-align:left;">
+                  <span style="font-size:0.7rem;font-weight:700;color:var(--accent-mint);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:0.25rem;">🐻 Bear AI Sales Pitch</span>
+                  <p style="font-size:0.88rem;color:var(--espresso);font-style:italic;margin:0;line-height:1.4;">"\\\${s.ai_pitch}"</p>
+                </div>
+                \\\` : ''}
                 <h4 style="font-family:'Playfair Display', serif;font-weight:700;font-size:1.1rem;color:var(--espresso);">Client Quoting Action</h4>
                 <p style="font-size:0.75rem;color:var(--cocoa-gray);">Generate a pre-formatted pricing quote to copy directly to your clipboard.</p>
-                <button class="quote-btn" onclick="copyQuoteToClipboard(event, '\${safeBrand}', '\${safeShip}', '\${s.sail_date}', '\${safeItinerary}', '\${s.category}', \${s.price}, \${s.price_drop}, '\${safePromo}', '\${safeIncentive}')">
+                <button class="quote-btn" onclick="copyQuoteToClipboard(event, '\\\${safeBrand}', '\\\${safeShip}', '\\\${s.sail_date}', '\\\${safeItinerary}', '\\\${s.category}', \\\${s.price}, \\\${s.price_drop}, '\\\${safePromo}', '\\\${safeIncentive}', '\\\${safePitch}')">
                   📋 Copy Quote
                 </button>
               </div>
@@ -1528,6 +1653,12 @@ function generateHtml(sailings, history, hasLogo) {
         \`;
         tbody.appendChild(drawerTr);
       });
+
+      try {
+        updateURLQuery();
+      } catch (err) {
+        console.warn('Failed to update URL parameters:', err.message);
+      }
     }
 
     const activeCharts = {};
@@ -1611,16 +1742,21 @@ function generateHtml(sailings, history, hasLogo) {
       return text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
     }
 
-    function copyQuoteToClipboard(event, brand, ship, sailDate, itinerary, category, price, priceDrop, promo, commission) {
+    function copyQuoteToClipboard(event, brand, ship, sailDate, itinerary, category, price, priceDrop, promo, commission, pitch) {
       event.stopPropagation();
       
       const cleanBrand = escapeHtmlText(brand);
       const cleanShip = escapeHtmlText(ship);
       const cleanItinerary = escapeHtmlText(itinerary);
       const cleanPromo = escapeHtmlText(promo);
+      const cleanPitch = escapeHtmlText(pitch || '');
       
       let quoteText = \`🚢 PREMIUM CRUISE QUOTE - WANDERING BEAR TRAVEL AGENCY\\n\`;
       quoteText += \`==================================================\\n\`;
+      if (cleanPitch) {
+        quoteText += \`Bear AI Hook : "\${cleanPitch}"\\n\`;
+        quoteText += \`--------------------------------------------------\\n\`;
+      }
       quoteText += \`Cruise Line: \${cleanBrand}\\n\`;
       quoteText += \`Ship Name  : \${cleanShip}\\n\`;
       quoteText += \`Sail Date  : \${formatDate(sailDate)}\\n\`;

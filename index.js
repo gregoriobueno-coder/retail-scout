@@ -28,6 +28,15 @@ async function saveDealsToDatabase(deals) {
     });
   };
 
+  const getAiPitch = (sailingId) => {
+    return new Promise((res) => {
+      db.get('SELECT ai_pitch FROM sailings WHERE sailing_id = ?', [sailingId], (err, row) => {
+        if (err || !row) res(null);
+        else res(row.ai_pitch);
+      });
+    });
+  };
+
   for (const d of deals) {
     const prevPrice = await getPrevPrice(d.sailing_id, d.category, d.rate_type);
     
@@ -43,10 +52,24 @@ async function saveDealsToDatabase(deals) {
       });
     }
 
+    let aiPitch = await getAiPitch(d.sailing_id);
+    if (!aiPitch && process.env.GEMINI_API_KEY) {
+      try {
+        const { generateSalesPitch } = require('./gemini-helper');
+        console.log(`[Gemini] Generating client sales pitch for new sailing: ${d.sailing_id}...`);
+        aiPitch = await generateSalesPitch(
+          d.brand, d.ship, d.sail_date, d.nights, d.itinerary,
+          d.base_rate, (d.max_price - d.base_rate), d.promotion_type, d.incentive
+        );
+      } catch (gemErr) {
+        console.warn(`[Gemini] Failed to compile pitch:`, gemErr.message);
+      }
+    }
+
     await new Promise((res) => {
       db.run(`
-        INSERT INTO sailings (sailing_id, brand, ship, sail_date, nights, itinerary, region, ports, promotion_type, incentive, theme, space_type, released_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO sailings (sailing_id, brand, ship, sail_date, nights, itinerary, region, ports, promotion_type, incentive, theme, space_type, released_date, ai_pitch)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(sailing_id) DO UPDATE SET
           brand=excluded.brand,
           ship=excluded.ship,
@@ -58,11 +81,13 @@ async function saveDealsToDatabase(deals) {
           promotion_type=excluded.promotion_type,
           incentive=excluded.incentive,
           theme=excluded.theme,
-          space_type=excluded.space_type
+          space_type=excluded.space_type,
+          ai_pitch=COALESCE(excluded.ai_pitch, ai_pitch)
       `, [
         d.sailing_id, d.brand, d.ship, d.sail_date, d.nights, d.itinerary, d.region,
         d.ports || null, d.promotion_type || null, d.incentive || null, d.theme || null, d.space_type || null,
-        new Date().toISOString().split('T')[0]
+        new Date().toISOString().split('T')[0],
+        aiPitch || null
       ], (err) => {
         if (err) {
           console.error(`[DB Error] Failed to insert sailing ${d.sailing_id}:`, err.message);

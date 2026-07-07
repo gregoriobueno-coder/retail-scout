@@ -35,7 +35,8 @@ function initDatabase() {
           incentive: 'TEXT',
           theme: 'TEXT',
           space_type: 'TEXT',
-          released_date: 'DATE'
+          released_date: 'DATE',
+          ai_pitch: 'TEXT'
         };
         for (const [col, type] of Object.entries(newCols)) {
           db.run(`ALTER TABLE sailings ADD COLUMN ${col} ${type}`, (alterErr) => {
