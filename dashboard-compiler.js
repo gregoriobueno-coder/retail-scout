@@ -55,13 +55,14 @@ function generateHtml(sailings, history, hasLogo) {
 
   // Build current deals list with price drops
   const activeDeals = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - 30);
+  cutoffDate.setHours(0, 0, 0, 0);
 
   for (const s of sailings) {
     const sailDate = new Date(s.sail_date);
-    if (!isNaN(sailDate.getTime()) && sailDate < today) {
-      continue; // Skip past sailings
+    if (!isNaN(sailDate.getTime()) && sailDate < cutoffDate) {
+      continue; // Skip sailings older than 30 days ago
     }
 
     // Find all categories for this sailing
@@ -1380,11 +1381,12 @@ function generateHtml(sailings, history, hasLogo) {
     }
 
     function initializeData() {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 30);
+      cutoffDate.setHours(0, 0, 0, 0);
 
-      // Filter out past voyages
-      allSailings = allSailings.filter(s => new Date(s.sail_date) >= today);
+      // Filter out past voyages older than 30 days
+      allSailings = allSailings.filter(s => new Date(s.sail_date) >= cutoffDate);
 
       // Build dynamic brand tabs
       const uniqueBrands = ['all'];
