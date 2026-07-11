@@ -70,9 +70,10 @@ async function loginSignature() {
   }
 
   const isGitHubAction = process.env.GITHUB_ACTIONS === 'true';
-  console.log(`[Signature Auth] Attempting automated credential-based login (${isGitHubAction ? 'headless' : 'headed'})...`);
+  const isHeadless = isGitHubAction || process.env.SIGNATURE_HEADLESS === 'true';
+  console.log(`[Signature Auth] Attempting automated credential-based login (${isHeadless ? 'headless' : 'headed'})...`);
   const browser = await chromium.launch({
-    headless: isGitHubAction,
+    headless: isHeadless,
     args: ['--disable-blink-features=AutomationControlled']
   });
   const context = await browser.newContext({
