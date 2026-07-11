@@ -145,19 +145,20 @@ function generateHtml(sailings, history, hasLogo) {
   
   <style>
     :root {
-      --bg-warm: #f5f0e3;
-      --card-bg: #ffffff;
-      --card-border: #e6dfcf;
-      --espresso: #3d1f0c;
-      --espresso-light: #5a3f2d;
-      --cocoa-gray: #7a6b63;
-      --accent-mint: #1bbc9b;
-      --accent-mint-hover: #16a085;
-      --accent-mint-light: rgba(27, 188, 155, 0.1);
-      --terracotta: #c94020;
-      --terracotta-light: rgba(201, 64, 32, 0.08);
-      --amber: #f3a46b;
-      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      /* Wandering Bear Sleek Dark Mode */
+      --bg-dark: #0c0b0a;
+      --card-bg: rgba(26, 23, 22, 0.65);
+      --card-border: rgba(225, 218, 203, 0.08);
+      --espresso: #f6f3eb;
+      --cocoa-gray: #bdafa6;
+      --accent-mint: #4db3a5;
+      --accent-mint-hover: #3ca092;
+      --accent-mint-light: rgba(77, 179, 165, 0.12);
+      --terracotta: #f15d3b;
+      --terracotta-light: rgba(241, 93, 59, 0.12);
+      --amber: #fca84d;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      --glass-blur: blur(20px);
     }
 
     * {
@@ -168,7 +169,9 @@ function generateHtml(sailings, history, hasLogo) {
 
     body {
       font-family: 'Montserrat', sans-serif;
-      background-color: var(--bg-warm);
+      background-color: var(--bg-dark);
+      background-image: radial-gradient(circle at 10% 20%, rgba(241, 93, 59, 0.05) 0%, transparent 40%),
+                        radial-gradient(circle at 90% 80%, rgba(77, 179, 165, 0.04) 0%, transparent 50%);
       color: var(--espresso);
       min-height: 100vh;
       padding: 2.5rem 1.5rem;
@@ -191,22 +194,25 @@ function generateHtml(sailings, history, hasLogo) {
       justify-content: center;
       align-items: center;
       z-index: 9999;
-      background: var(--bg-warm);
+      background-color: var(--bg-dark);
+      background-image: radial-gradient(circle at 50% 50%, rgba(241, 93, 59, 0.08) 0%, transparent 60%);
     }
 
     .lock-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 3rem 2rem;
-      max-width: 420px;
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border-radius: 32px;
+      padding: 3.5rem 2.5rem;
+      max-width: 440px;
       width: 90%;
       text-align: center;
-      box-shadow: 0 10px 30px rgba(61, 31, 12, 0.06);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
     }
 
     .lock-logo-wrapper {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.8rem;
       display: flex;
       justify-content: center;
     }
@@ -219,35 +225,38 @@ function generateHtml(sailings, history, hasLogo) {
     .lock-card h2 {
       font-family: 'Playfair Display', serif;
       font-weight: 700;
-      font-size: 1.8rem;
-      margin-bottom: 0.5rem;
+      font-size: 1.9rem;
+      margin-bottom: 0.6rem;
       color: var(--espresso);
+      letter-spacing: -0.01em;
     }
 
     .lock-card p {
       color: var(--cocoa-gray);
-      font-size: 0.9rem;
-      margin-bottom: 2rem;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      margin-bottom: 2.2rem;
     }
 
     .pw-input {
       width: 100%;
-      background: #faf8f5;
+      background: rgba(0, 0, 0, 0.2);
       border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 0.9rem 1.2rem;
+      border-radius: 14px;
+      padding: 1rem 1.2rem;
       color: var(--espresso);
-      font-size: 1rem;
+      font-size: 1.05rem;
       outline: none;
       text-align: center;
-      letter-spacing: 0.2em;
-      margin-bottom: 1rem;
+      letter-spacing: 0.25em;
+      margin-bottom: 1.2rem;
       transition: var(--transition);
     }
 
     .pw-input:focus {
       border-color: var(--accent-mint);
-      box-shadow: 0 0 10px rgba(27, 188, 155, 0.2);
+      background: rgba(0, 0, 0, 0.35);
+      box-shadow: 0 0 15px rgba(77, 179, 165, 0.25);
     }
 
     .pw-btn {
@@ -255,17 +264,19 @@ function generateHtml(sailings, history, hasLogo) {
       background: var(--accent-mint);
       color: #ffffff;
       border: none;
-      border-radius: 10px;
-      padding: 0.9rem;
-      font-size: 1rem;
+      border-radius: 14px;
+      padding: 1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       cursor: pointer;
+      box-shadow: 0 4px 15px rgba(77, 179, 165, 0.3);
       transition: var(--transition);
     }
 
     .pw-btn:hover {
       background: var(--accent-mint-hover);
-      box-shadow: 0 4px 15px rgba(27, 188, 155, 0.25);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(77, 179, 165, 0.4);
     }
 
     .error-msg {
