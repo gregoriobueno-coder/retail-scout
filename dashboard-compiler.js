@@ -913,6 +913,9 @@ function generateHtml(sailings, history, hasLogo) {
             <span class="toggle-label" id="label-client">Client View</span>
           </div>
         </div>
+        <a href="https://github.com/gregoriobueno-coder/retail-scout/actions/workflows/sync-rates.yml" target="_blank" style="display:inline-flex;align-items:center;text-decoration:none;" title="View Scraper Actions Runs & Audit logs">
+          <img src="https://github.com/gregoriobueno-coder/retail-scout/actions/workflows/sync-rates.yml/badge.svg" alt="Retail Scout Sync Status" style="border-radius:4px;box-shadow:0 2px 8px rgba(43,24,16,0.05);height:20px;">
+        </a>
         <button class="stats-badge" id="last-updated" onclick="triggerScraperRun()" style="cursor:pointer;border:none;outline:none;display:inline-flex;align-items:center;gap:0.4rem;transition:var(--transition);font-family:inherit;">🔄 Real-time Rates</button>
       </div>
     </header>
@@ -1214,7 +1217,7 @@ function generateHtml(sailings, history, hasLogo) {
         csvRows.push(row.join(','));
       }
 
-      const csvString = csvRows.join('\n');
+      const csvString = csvRows.join('\\n');
       const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
@@ -1645,15 +1648,15 @@ function generateHtml(sailings, history, hasLogo) {
                 <canvas id="canvas-\${drawerId}"></canvas>
               </div>
               <div class="drawer-info-container">
-                \${s.ai_pitch ? \\\`
+                \${s.ai_pitch ? \`
                 <div class="ai-pitch-card" style="margin-bottom:1.2rem;background:#f4fbf8;border:1px solid #d3f2e5;border-radius:12px;padding:0.9rem;box-shadow:0 2px 8px rgba(0,0,0,0.02);text-align:left;">
                   <span style="font-size:0.7rem;font-weight:700;color:var(--accent-mint);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:0.25rem;">🐻 Bear AI Sales Pitch</span>
-                  <p style="font-size:0.88rem;color:var(--espresso);font-style:italic;margin:0;line-height:1.4;">"\\\${s.ai_pitch}"</p>
+                  <p style="font-size:0.88rem;color:var(--espresso);font-style:italic;margin:0;line-height:1.4;">"\${s.ai_pitch}"</p>
                 </div>
-                \\\` : ''}
+                \` : ''}
                 <h4 style="font-family:'Playfair Display', serif;font-weight:700;font-size:1.1rem;color:var(--espresso);">Client Quoting Action</h4>
                 <p style="font-size:0.75rem;color:var(--cocoa-gray);">Generate a pre-formatted pricing quote to copy directly to your clipboard.</p>
-                <button class="quote-btn" onclick="copyQuoteToClipboard(event, '\\\${safeBrand}', '\\\${safeShip}', '\\\${s.sail_date}', '\\\${safeItinerary}', '\\\${s.category}', \\\${s.price}, \\\${s.price_drop}, '\\\${safePromo}', '\\\${safeIncentive}', '\\\${safePitch}')">
+                <button class="quote-btn" onclick="copyQuoteToClipboard(event, '\${safeBrand}', '\${safeShip}', '\${s.sail_date}', '\${safeItinerary}', '\${s.category}', \${s.price}, \${s.price_drop}, '\${safePromo}', '\${safeIncentive}', '\${safePitch}')">
                   📋 Copy Quote
                 </button>
               </div>
