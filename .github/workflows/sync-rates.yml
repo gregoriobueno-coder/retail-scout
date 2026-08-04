@@ -50,3 +50,30 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html retail_scout.db auth/signature-state.json
           git diff --quiet && git diff --staged --quiet || (git commit -m "Automated Sync: Update retail pricing database & dashboard" && git push origin main)
+
+      - name: Prepare Public Directory for Firebase
+        run: |
+          mkdir -p public
+          cp index.html public/
+          cp logo.png public/ || true
+
+      - name: Deploy to Firebase Hosting
+        env:
+          FIREBASE_ADMIN_SECRET: "${{ secrets['firebase-admin'] }}"
+        run: |
+          node -e '
+            const fs = require("fs");
+            const secret = process.env.FIREBASE_ADMIN_SECRET || "";
+            if (secret.trim().startsWith("{")) {
+              console.log("Writing service-account.json...");
+              fs.writeFileSync("service-account.json", secret);
+            }
+          '
+          if [ -f service-account.json ]; then
+            echo "Authenticating via Service Account JSON..."
+            export GOOGLE_APPLICATION_CREDENTIALS=service-account.json
+            npx firebase-tools deploy --only hosting --project fambotpage
+          else
+            echo "Authenticating via Firebase Auth Token..."
+            npx firebase-tools deploy --only hosting --project fambotpage --token "$FIREBASE_ADMIN_SECRET"
+          fi
