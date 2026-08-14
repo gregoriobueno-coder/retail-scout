@@ -92,17 +92,11 @@ jobs:
           if [ -f service-account.json ]; then
             echo "Authenticating via Service Account JSON..."
             export GOOGLE_APPLICATION_CREDENTIALS=service-account.json
-            echo "=== Firebase Sites List ==="
-            npx firebase-tools hosting:sites:list --project fambotpage || true
-            echo "==========================="
             echo "Creating hosting site fambotpage-public if not exists..."
             npx firebase-tools hosting:sites:create fambotpage-public --project fambotpage || true
             npx firebase-tools deploy --only hosting --project fambotpage
           else
             echo "Authenticating via Firebase Auth Token..."
-            echo "=== Firebase Sites List ==="
-            npx firebase-tools hosting:sites:list --project fambotpage --token "$FIREBASE_ADMIN_SECRET" || true
-            echo "==========================="
             echo "Creating hosting site fambotpage-public if not exists..."
             npx firebase-tools hosting:sites:create fambotpage-public --project fambotpage --token "$FIREBASE_ADMIN_SECRET" || true
             npx firebase-tools deploy --only hosting --project fambotpage --token "$FIREBASE_ADMIN_SECRET"
