@@ -4,3 +4,5 @@ node_modules/
 *.db-journal
 *.log
 !retail_scout.db
+auth/signature-state.json
+auth/*-state.json
